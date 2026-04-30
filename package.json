@@ -1,0 +1,12 @@
+{
+  "name": "gym-tracker",
+  "version": "1.0.0",
+  "description": "Personal gym, diet & activity tracker — Jithu",
+  "private": true,
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

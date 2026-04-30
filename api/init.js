@@ -61,15 +61,30 @@ module.exports = async (req, res) => {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )`;
 
-    // Useful index for exercise history queries
+    await sql`
+      CREATE TABLE IF NOT EXISTS food_logs (
+        id           SERIAL PRIMARY KEY,
+        date         DATE NOT NULL,
+        meal_timing  VARCHAR(20) NOT NULL,
+        food_item    VARCHAR(200) NOT NULL,
+        calories     INTEGER DEFAULT 0,
+        protein      INTEGER DEFAULT 0,
+        carbs        INTEGER DEFAULT 0,
+        fats         INTEGER DEFAULT 0,
+        created_at   TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(date, meal_timing, food_item)
+      )`;
+
+    // Indexes
     await sql`CREATE INDEX IF NOT EXISTS idx_workout_exercise ON workout_logs(exercise, date DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_workout_date    ON workout_logs(date)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_weight_date     ON body_weight_logs(date DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_activity_date   ON activity_logs(date DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_food_date       ON food_logs(date)`;
 
     return res.json({
       success: true,
-      message: '✅ Database initialised! All 5 tables + indexes created. You can now use the app.'
+      message: '✅ Database initialised! All 6 tables + indexes created. You can now use the app.'
     });
   } catch (err) {
     console.error(err);

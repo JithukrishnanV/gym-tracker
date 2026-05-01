@@ -62,6 +62,17 @@ module.exports = async (req, res) => {
       )`;
 
     await sql`
+      CREATE TABLE IF NOT EXISTS sleep_logs (
+        id           SERIAL PRIMARY KEY,
+        date         DATE NOT NULL UNIQUE,
+        hours_slept  NUMERIC(4,1),
+        bedtime      VARCHAR(10),
+        waketime     VARCHAR(10),
+        created_at   TIMESTAMPTZ DEFAULT NOW(),
+        updated_at   TIMESTAMPTZ DEFAULT NOW()
+      )`;
+
+    await sql`
       CREATE TABLE IF NOT EXISTS food_logs (
         id           SERIAL PRIMARY KEY,
         date         DATE NOT NULL,
@@ -82,9 +93,11 @@ module.exports = async (req, res) => {
     await sql`CREATE INDEX IF NOT EXISTS idx_activity_date   ON activity_logs(date DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_food_date       ON food_logs(date)`;
 
+    await sql`CREATE INDEX IF NOT EXISTS idx_sleep_date ON sleep_logs(date DESC)`;
+
     return res.json({
       success: true,
-      message: '✅ Database initialised! All 6 tables + indexes created. You can now use the app.'
+      message: '✅ Database initialised! All 7 tables + indexes created. You can now use the app.'
     });
   } catch (err) {
     console.error(err);

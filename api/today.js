@@ -14,12 +14,13 @@ module.exports = async (req, res) => {
   const sql = neon(process.env.DATABASE_URL);
 
   try {
-    const [weights, activities, wLogs, mLogs, notes] = await Promise.all([
+    const [weights, activities, wLogs, mLogs, notes, sleepRows] = await Promise.all([
       sql`SELECT weight_lb FROM body_weight_logs WHERE date = ${date} ORDER BY created_at DESC LIMIT 1`,
       sql`SELECT activity_type, duration_minutes FROM activity_logs WHERE date = ${date} ORDER BY created_at ASC`,
-      sql`SELECT exercise, set_number, reps, weight FROM workout_logs WHERE date = ${date} ORDER BY exercise, set_number ASC`,
+      sql`SELECT id, exercise, set_number, reps, weight FROM workout_logs WHERE date = ${date} ORDER BY exercise, set_number ASC`,
       sql`SELECT DISTINCT ON (meal_type) meal_type, option_chosen FROM meal_logs WHERE date = ${date} ORDER BY meal_type, created_at DESC`,
       sql`SELECT notes FROM daily_notes WHERE date = ${date} LIMIT 1`,
+      sql`SELECT hours_slept, bedtime, waketime FROM sleep_logs WHERE date = ${date} LIMIT 1`,
     ]);
 
     // Group workout logs by exercise name → array indexed by set_number-1
@@ -27,8 +28,9 @@ module.exports = async (req, res) => {
     wLogs.forEach(row => {
       if (!workoutLogs[row.exercise]) workoutLogs[row.exercise] = [];
       workoutLogs[row.exercise][row.set_number - 1] = {
+        id:     row.id,
         weight: parseFloat(row.weight) || 0,
-        reps: row.reps
+        reps:   row.reps,
       };
     });
 
@@ -36,12 +38,14 @@ module.exports = async (req, res) => {
     const meals = {};
     mLogs.forEach(row => { meals[row.meal_type] = { option_chosen: row.option_chosen }; });
 
+    const sl = sleepRows[0];
     return res.json({
-      weight: weights[0]?.weight_lb ? parseFloat(weights[0].weight_lb) : null,
-      activities: activities || [],
+      weight:      weights[0]?.weight_lb ? parseFloat(weights[0].weight_lb) : null,
+      activities:  activities || [],
       workoutLogs,
       meals,
-      notes: notes[0]?.notes || '',
+      notes:       notes[0]?.notes || '',
+      sleep:       sl ? { hours_slept: parseFloat(sl.hours_slept) || null, bedtime: sl.bedtime, waketime: sl.waketime } : null,
     });
   } catch (err) {
     console.error(err);

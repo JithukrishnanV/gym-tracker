@@ -1702,7 +1702,7 @@ async function loadDetailAnalysis(section){
 
 function loadDetailRecords(section){
   const el = document.getElementById(section==='workout'?'wd-records-list':section==='diet'?'dd-records-list':'rd-records-list');
-  el.innerHTML = '<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:16px"><div style="margin-bottom:8px">Select a date to edit past records independently.</div><input type="date" class="inp" id="date-pick-'+section+'" value="'+todayStr+'" max="'+fmtDate(actualToday)+'" onchange="loadEmbedFrame(\\''+section+'\\', this.value)" style="margin:8px auto;width:auto;display:block;background:var(--surface)"></div></div><div id="embed-wrap-'+section+'" style="margin-top:16px;border-radius:12px;overflow:hidden;min-height:500px"></div>';
+  el.innerHTML = '<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:16px"><div style="margin-bottom:8px">Select a date to edit past records independently.</div><input type="date" class="inp" id="date-pick-'+section+'" value="'+todayStr+'" max="'+fmtDate(actualToday)+'" onchange="loadEmbedFrame(\''+section+'\', this.value)" style="margin:8px auto;width:auto;display:block;background:var(--surface)"></div></div><div id="embed-wrap-'+section+'" style="margin-top:16px;border-radius:12px;overflow:hidden;min-height:500px"></div>';
   
   // Auto-load today's embed
   loadEmbedFrame(section, todayStr);

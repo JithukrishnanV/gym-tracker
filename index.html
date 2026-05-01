@@ -227,6 +227,20 @@ input[type=number]{-moz-appearance:textfield}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 18px;font-size:13px;font-weight:600;z-index:9999;white-space:nowrap;opacity:0;transition:opacity .25s;pointer-events:none}
 .toast.show{opacity:1}
 
+/* ── HOME & ROUTINE ── */
+.home-greeting{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--text);margin-bottom:12px;letter-spacing:1px}
+.routine-ring-wrap{display:flex;justify-content:center;padding:20px 0}
+.routine-ring{width:160px;height:160px;border-radius:50%;background:conic-gradient(var(--accent) 0deg, var(--card2) 0deg);display:flex;align-items:center;justify-content:center;transition:background 0.5s}
+.routine-ring-inner{width:140px;height:140px;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset 0 0 20px rgba(0,0,0,0.5)}
+.routine-score-val{font-family:'Bebas Neue',sans-serif;font-size:52px;line-height:1;color:var(--accent)}
+.routine-score-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px;font-weight:600}
+.habit-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.habit-name{font-weight:600;font-size:14px}
+.habit-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.habit-inp{width:70px;text-align:center;padding:8px 4px}
+.pill-toggle{width:60px;height:32px;border-radius:16px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;transition:all 0.2s}
+.pill-toggle.on{background:rgba(200,240,96,0.15);border-color:var(--accent);color:var(--accent)}
+
 /* ── MISC ── */
 .loading{text-align:center;padding:32px;color:var(--muted);font-size:13px}
 .err{text-align:center;padding:24px;color:var(--danger);font-size:13px}
@@ -429,40 +443,36 @@ textarea.inp{resize:none;min-height:72px}
 </div>
 
 <!-- ═══════════════════════════════════════
-     ANALYSIS PANEL
+     HOME PANEL
 ══════════════════════════════════════════ -->
-<div class="panel" id="panel-analysis">
-  <div class="sec">PROGRESS</div>
-  <div class="stats2" id="analysis-stats">
-    <div class="stat-card"><div class="stat-big" style="color:var(--accent)" id="stat-cw">—</div><div class="stat-lbl">Current lb</div></div>
-    <div class="stat-card"><div class="stat-big" style="color:var(--accent2)" id="stat-streak">—</div><div class="stat-lbl">Day Streak</div></div>
-    <div class="stat-card"><div class="stat-big" style="color:var(--accent4)" id="stat-sleep">—</div><div class="stat-lbl">Avg Sleep hrs</div></div>
-    <div class="stat-card"><div class="stat-big" style="color:var(--accent3)" id="stat-cals">—</div><div class="stat-lbl">Avg Daily kcal</div></div>
+<div class="panel" id="panel-home">
+  <div class="home-greeting" id="home-greeting">Good Morning, Jithu</div>
+  
+  <div class="stats2" id="home-stats">
+    <div class="stat-card"><div class="stat-big" style="color:var(--accent)" id="home-score">—</div><div class="stat-lbl">Yesterday's Score</div></div>
+    <div class="stat-card"><div class="stat-big" style="color:var(--accent2)" id="home-streak">—</div><div class="stat-lbl">Day Streak</div></div>
+    <div class="stat-card"><div class="stat-big" style="color:var(--accent4)" id="home-best">—</div><div class="stat-lbl">Best This Week</div></div>
+    <div class="stat-card"><div class="stat-big" style="color:var(--accent3)" id="home-cw">—</div><div class="stat-lbl">Current lb</div></div>
   </div>
 
-  <div class="card">
-    <div class="card-header"><span>🍽️</span><span class="card-title">Calories — Last 14 Days</span></div>
-    <div class="card-body"><div class="chart-wrap-sm"><canvas id="chart-cal"></canvas></div></div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><span>💪</span><span class="card-title">Protein — Last 14 Days</span></div>
+  <div class="card" onclick="goPanel('workout', document.querySelector('.nav-item[onclick*=\'workout\']'))" style="cursor:pointer">
+    <div class="card-header"><span>💪</span><span class="card-title">Workout</span><span class="ml-auto txt-sm txt-muted">Last 7 Days</span></div>
     <div class="card-body">
-      <div class="chart-wrap-sm"><canvas id="chart-protein"></canvas></div>
-      <div style="font-size:10px;color:var(--muted);margin-top:4px;text-align:right">Target: 155g/day</div>
+      <div class="chart-wrap-sm"><canvas id="home-workout-chart"></canvas></div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-header"><span>⚖️</span><span class="card-title">Weight History</span></div>
-    <div class="card-body"><div class="chart-wrap"><canvas id="chart-weight"></canvas></div></div>
+  <div class="card" onclick="goPanel('diet', document.querySelector('.nav-item[onclick*=\'diet\']'))" style="cursor:pointer">
+    <div class="card-header"><span>🍽️</span><span class="card-title">Diet</span><span class="ml-auto txt-sm txt-muted">Last 7 Days</span></div>
+    <div class="card-body">
+      <div class="chart-wrap-sm"><canvas id="home-diet-chart"></canvas></div>
+    </div>
   </div>
 
-  <div class="card">
-    <div class="card-header"><span>💪</span><span class="card-title">Exercise Progression</span></div>
+  <div class="card" onclick="goPanel('routine', document.querySelector('.nav-item[onclick*=\'routine\']'))" style="cursor:pointer">
+    <div class="card-header"><span>🌟</span><span class="card-title">Routine</span><span class="ml-auto txt-sm txt-muted">Last 7 Days</span></div>
     <div class="card-body">
-      <select class="inp" id="sel-ex" onchange="loadExHistory()" style="margin-bottom:12px"><option value="">Select exercise…</option></select>
-      <div id="ex-hist"></div>
+      <div class="chart-wrap-sm"><canvas id="home-routine-chart"></canvas></div>
     </div>
   </div>
 
@@ -486,11 +496,95 @@ textarea.inp{resize:none;min-height:72px}
   </div>
 </div>
 
-<!-- ═══════ BOTTOM NAV (3 tabs) ═══════ -->
+<!-- ═══════════════════════════════════════
+     ROUTINE PANEL
+══════════════════════════════════════════ -->
+<div class="panel" id="panel-routine">
+  <div class="routine-ring-wrap">
+    <div class="routine-ring" id="routine-ring">
+      <div class="routine-ring-inner">
+        <div class="routine-score-val" id="routine-score-val">0</div>
+        <div class="routine-score-lbl" id="routine-emoji">💤 Rest</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span>✅</span><span class="card-title">Daily Checklist</span><span class="ml-auto txt-sm txt-muted">100 pts possible</span></div>
+    <div class="card-body">
+      <div class="habit-item">
+        <div class="habit-info">
+          <div class="habit-name">🎹 Piano</div>
+          <div class="habit-desc">1pt / 3min (Max 20pts)</div>
+        </div>
+        <div class="habit-action">
+          <input type="number" class="inp habit-inp" id="hab-piano" placeholder="min" oninput="updateRoutineScore()">
+        </div>
+      </div>
+      <div class="habit-item">
+        <div class="habit-info">
+          <div class="habit-name">📚 Read Books</div>
+          <div class="habit-desc">1pt / 3min (Max 20pts)</div>
+        </div>
+        <div class="habit-action">
+          <input type="number" class="inp habit-inp" id="hab-read" placeholder="min" oninput="updateRoutineScore()">
+        </div>
+      </div>
+      <div class="habit-item">
+        <div class="habit-info">
+          <div class="habit-name">💻 Study</div>
+          <div class="habit-desc">4pt / hr (Max 20pts)</div>
+        </div>
+        <div class="habit-action">
+          <input type="number" class="inp habit-inp" id="hab-study" placeholder="hrs" step="0.5" oninput="updateRoutineScore()">
+        </div>
+      </div>
+      <div class="habit-item">
+        <div class="habit-info">
+          <div class="habit-name">🌅 Early Wakeup</div>
+          <div class="habit-desc">15 pts</div>
+        </div>
+        <div class="habit-action">
+          <div class="pill-toggle" id="hab-wakeup" onclick="toggleHabit(this)">NO</div>
+        </div>
+      </div>
+      <div class="habit-item">
+        <div class="habit-info">
+          <div class="habit-name">🚶 Morning Walk/Run</div>
+          <div class="habit-desc">15 pts</div>
+        </div>
+        <div class="habit-action">
+          <div class="pill-toggle" id="hab-walk" onclick="toggleHabit(this)">NO</div>
+        </div>
+      </div>
+      <div class="habit-item" style="border-bottom:none">
+        <div class="habit-info">
+          <div class="habit-name">💊 Supplements</div>
+          <div class="habit-desc">10 pts</div>
+        </div>
+        <div class="habit-action">
+          <div class="pill-toggle" id="hab-supps" onclick="toggleHabit(this)">NO</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="saveRoutine()">💾 Save Routine</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span>📊</span><span class="card-title">Insights</span></div>
+    <div class="card-body">
+      <div class="sec">THIS WEEK</div>
+      <div id="routine-history" style="margin-bottom:16px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ BOTTOM NAV (4 tabs) ═══════ -->
 <div class="bottom-nav">
+  <div class="nav-item" onclick="goPanel('home',this)"><span class="nav-icon">🏠</span>Home</div>
+  <div class="nav-item" onclick="goPanel('routine',this)"><span class="nav-icon">🌟</span>Routine</div>
   <div class="nav-item active" onclick="goPanel('workout',this)"><span class="nav-icon">💪</span>Workout</div>
   <div class="nav-item" onclick="goPanel('diet',this)"><span class="nav-icon">🍽️</span>Diet</div>
-  <div class="nav-item" onclick="goPanel('analysis',this)"><span class="nav-icon">📈</span>Analysis</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -614,10 +708,12 @@ let foodState={};
 let curMealTab='lunch';
 let customExercises=[];  // added for today's session [{n,s,r}]
 let weightChart=null,exChart=null,calChart=null,proChart=null;
-let analysisLoaded=false,foodLoaded=false;
+let homeWorkoutChart=null,homeDietChart=null,homeRoutineChart=null;
+let analysisLoaded=false,foodLoaded=false,routineLoaded=false;
 let timerInterval=null,timerStart=0,timerElapsed=0,timerRunning=false,timerLaps=[];
 let calViewDate=new Date(today);
 let analysisData=null;
+let routineData=null;
 
 /* ═══════════════════════════════════════════
    UTILS
@@ -1138,71 +1234,192 @@ function printSummary(){
 /* ═══════════════════════════════════════════
    ANALYSIS TAB
 ═══════════════════════════════════════════ */
-async function loadAnalysis(){
-  if(analysisLoaded) return;
-  analysisLoaded=true;
-  try{
-    analysisData=await apiFetch('/api/analysis');
-    renderAnalysis();
-  }catch(e){console.error('Analysis error',e);}
+/* ═══════════════════════════════════════════
+   HOME & ROUTINE
+═══════════════════════════════════════════ */
+async function loadHome() {
+  if (analysisLoaded) return;
+  analysisLoaded = true;
+  try {
+    const [aData, rData] = await Promise.all([
+      apiFetch('/api/analysis'),
+      apiFetch('/api/routine?range=7')
+    ]);
+    analysisData = aData;
+    routineData = rData;
+    renderHome();
+  } catch(e) { console.error('Home error', e); }
 }
 
-function renderAnalysis(){
+function renderHome() {
   if(!analysisData) return;
   const {weights,activitiesByDate,foodByDate,sleepByDate,streak}=analysisData;
+  const todayDate = new Date();
+  
+  // Greeting
+  const hr = todayDate.getHours();
+  const greeting = hr < 12 ? 'Good Morning' : hr < 18 ? 'Good Afternoon' : 'Good Evening';
+  document.getElementById('home-greeting').textContent = `${greeting}, Jithu`;
 
   // Streak badge in header
   if(streak>0){
     document.getElementById('streak-num').textContent=streak;
     document.getElementById('streak-badge').style.display='flex';
-    document.getElementById('stat-streak').textContent=streak;
+    document.getElementById('home-streak').textContent=streak;
+  } else {
+    document.getElementById('home-streak').textContent=0;
   }
 
   // Current weight
-  if(weights.length) document.getElementById('stat-cw').textContent=weights[0].weight_lb;
+  if(weights.length) document.getElementById('home-cw').textContent=weights[0].weight_lb;
 
-  // Avg sleep (last 14 days)
-  const sleepVals=Object.values(sleepByDate).map(s=>s.hours).filter(h=>h>0);
-  if(sleepVals.length){const avg=(sleepVals.reduce((a,b)=>a+b,0)/sleepVals.length).toFixed(1);document.getElementById('stat-sleep').textContent=avg;}
+  // Yesterday's Score
+  let yesterdayScore = '—';
+  let bestScore = '—';
+  if(routineData && routineData.length > 0) {
+    const yestDate = new Date();
+    yestDate.setDate(yestDate.getDate() - 1);
+    const yStr = fmtDate(yestDate);
+    const yestObj = routineData.find(r => r.date === yStr);
+    if(yestObj) yesterdayScore = yestObj.total_score;
+    
+    // Best this week
+    const last7 = routineData.slice(-7);
+    const maxScore = Math.max(...last7.map(r => r.total_score || 0));
+    bestScore = maxScore;
+  }
+  document.getElementById('home-score').textContent = yesterdayScore;
+  document.getElementById('home-best').textContent = bestScore;
 
-  // Avg calories (last 14 days)
-  const calVals=Object.values(foodByDate).map(f=>f.calories).filter(c=>c>0);
-  if(calVals.length){const avg=Math.round(calVals.reduce((a,b)=>a+b,0)/calVals.length);document.getElementById('stat-cals').textContent=avg;}
-
-  // Build 14-day date range
-  const labels14=[],calData=[],proData=[];
-  for(let i=13;i>=0;i--){
+  // Charts data
+  const labels7=[], workoutData=[], dietData=[], routineChartData=[];
+  for(let i=6;i>=0;i--){
     const d=new Date(today);d.setDate(d.getDate()-i);
     const ds=fmtDate(d);
-    const shortLabel=(d.getMonth()+1)+'/'+(d.getDate());
-    labels14.push(shortLabel);
-    calData.push(foodByDate[ds]?.calories||0);
-    proData.push(foodByDate[ds]?.protein||0);
+    labels7.push((d.getMonth()+1)+'/'+d.getDate());
+    
+    // workout
+    const hasGym = (activitiesByDate[ds]||[]).some(a=>a.type==='gym') ? 1 : 0;
+    workoutData.push(hasGym);
+    
+    // diet
+    dietData.push(foodByDate[ds]?.calories||0);
+    
+    // routine
+    const rObj = routineData?.find(r => r.date === ds);
+    routineChartData.push(rObj ? rObj.total_score : 0);
   }
 
-  // Calorie chart
-  const calCtx=document.getElementById('chart-cal').getContext('2d');
-  if(calChart) calChart.destroy();
-  calChart=new Chart(calCtx,{type:'bar',data:{labels:labels14,datasets:[{data:calData,backgroundColor:'rgba(240,160,96,.55)',borderColor:'#f0a060',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:9}}},y:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:9}}}}}});
+  // Draw mini charts
+  const commonOpts = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{enabled:false}}, scales:{x:{display:false}, y:{display:false}}, layout:{padding:0} };
 
-  // Protein chart
-  const proCtx=document.getElementById('chart-protein').getContext('2d');
-  if(proChart) proChart.destroy();
-  proChart=new Chart(proCtx,{type:'bar',data:{labels:labels14,datasets:[{data:proData,backgroundColor:'rgba(96,212,240,.5)',borderColor:'#60d4f0',borderWidth:1,borderRadius:4},{data:Array(14).fill(PRO_TARGET),type:'line',borderColor:'rgba(200,240,96,.5)',borderDash:[4,4],borderWidth:1,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:9}}},y:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:9}}}}}});
+  if(homeWorkoutChart) homeWorkoutChart.destroy();
+  homeWorkoutChart = new Chart(document.getElementById('home-workout-chart'), { type:'bar', data:{labels:labels7, datasets:[{data:workoutData, backgroundColor:workoutData.map(v=>v?'var(--accent)':'var(--card2)'), borderRadius:4}]}, options:commonOpts });
 
-  // Weight chart
-  const wCtx=document.getElementById('chart-weight').getContext('2d');
-  if(weightChart) weightChart.destroy();
-  const wL=weights.slice(0,30).reverse();
-  weightChart=new Chart(wCtx,{type:'line',data:{labels:wL.map(w=>{const d=new Date(w.date);return (d.getMonth()+1)+'/'+d.getDate();}),datasets:[{data:wL.map(w=>w.weight_lb),borderColor:'#c8f060',backgroundColor:'rgba(200,240,96,.07)',borderWidth:2,pointBackgroundColor:'#c8f060',pointRadius:4,fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:10}}},y:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:10}}}}}});
+  if(homeDietChart) homeDietChart.destroy();
+  homeDietChart = new Chart(document.getElementById('home-diet-chart'), { type:'bar', data:{labels:labels7, datasets:[{data:dietData, backgroundColor:'var(--accent3)', borderRadius:4}, {data:Array(7).fill(2800), type:'line', borderColor:'rgba(255,255,255,0.2)', borderDash:[4,4], borderWidth:1, pointRadius:0, fill:false}]}, options:commonOpts });
 
-  // Exercise dropdown
-  const exAll=[...new Set(Object.values(PLAN).flatMap(d=>[...d.A,...d.B].map(e=>e.n)))].sort();
-  const sel=document.getElementById('sel-ex');
-  sel.innerHTML='<option value="">Select exercise…</option>'+exAll.map(e=>'<option value="'+e+'">'+e+'</option>').join('');
+  if(homeRoutineChart) homeRoutineChart.destroy();
+  homeRoutineChart = new Chart(document.getElementById('home-routine-chart'), { type:'bar', data:{labels:labels7, datasets:[{data:routineChartData, backgroundColor:'var(--accent2)', borderRadius:4}, {data:Array(7).fill(70), type:'line', borderColor:'rgba(255,255,255,0.2)', borderDash:[4,4], borderWidth:1, pointRadius:0, fill:false}]}, options:commonOpts });
 
-  // Calendar
   renderCalendar();
+}
+
+async function loadRoutine() {
+  if(!routineLoaded) {
+    try {
+      const rd = await apiFetch('/api/routine?date=' + todayStr);
+      if(rd) {
+        document.getElementById('hab-piano').value = rd.piano_mins || '';
+        document.getElementById('hab-read').value = rd.reading_mins || '';
+        document.getElementById('hab-study').value = rd.study_hours || '';
+        if(rd.early_wakeup) document.getElementById('hab-wakeup').classList.add('on');
+        if(rd.morning_walk) document.getElementById('hab-walk').classList.add('on');
+        if(rd.supplements) document.getElementById('hab-supps').classList.add('on');
+        
+        document.getElementById('hab-wakeup').textContent = rd.early_wakeup ? 'YES' : 'NO';
+        document.getElementById('hab-walk').textContent = rd.morning_walk ? 'YES' : 'NO';
+        document.getElementById('hab-supps').textContent = rd.supplements ? 'YES' : 'NO';
+      }
+      routineLoaded = true;
+    } catch(e) { console.error('Routine fetch err', e); }
+  }
+  updateRoutineScore();
+
+  if(!routineData) {
+    try { routineData = await apiFetch('/api/routine?range=7'); } catch(e){}
+  }
+  
+  if(routineData && routineData.length > 0) {
+    let histHTML = '';
+    const last7 = routineData.slice(-7).reverse();
+    for(let r of last7) {
+      const dt = new Date(r.date);
+      histHTML += `<div class="hist-row"><div>${DAYS[dt.getDay()]} ${dt.getDate()}</div><div class="hist-val">${r.total_score}</div></div>`;
+    }
+    document.getElementById('routine-history').innerHTML = histHTML;
+  } else {
+    document.getElementById('routine-history').innerHTML = '<div class="txt-muted" style="font-size:12px">No history yet</div>';
+  }
+}
+
+function toggleHabit(el) {
+  el.classList.toggle('on');
+  el.textContent = el.classList.contains('on') ? 'YES' : 'NO';
+  updateRoutineScore();
+}
+
+function updateRoutineScore() {
+  const piano = parseInt(document.getElementById('hab-piano').value) || 0;
+  const read = parseInt(document.getElementById('hab-read').value) || 0;
+  const study = parseFloat(document.getElementById('hab-study').value) || 0;
+  const wakeup = document.getElementById('hab-wakeup').classList.contains('on');
+  const walk = document.getElementById('hab-walk').classList.contains('on');
+  const supps = document.getElementById('hab-supps').classList.contains('on');
+
+  let s = 0;
+  s += Math.min(20, Math.floor(piano / 3));
+  s += Math.min(20, Math.floor(read / 3));
+  s += wakeup ? 15 : 0;
+  s += walk ? 15 : 0;
+  s += Math.min(20, Math.floor(study * 4));
+  s += supps ? 10 : 0;
+
+  document.getElementById('routine-score-val').textContent = s;
+  
+  let emoji = '💤 Rest';
+  if(s>=90) emoji = '🌟 Elite';
+  else if(s>=70) emoji = '✅ Strong';
+  else if(s>=50) emoji = '🔶 Building';
+  else if(s>=30) emoji = '📈 Starting';
+
+  document.getElementById('routine-emoji').textContent = emoji;
+
+  const deg = Math.round((s / 100) * 360);
+  const ring = document.getElementById('routine-ring');
+  let color = 'var(--accent)';
+  if(s<50) color = 'var(--accent3)';
+  if(s<30) color = 'var(--muted)';
+  ring.style.background = `conic-gradient(${color} ${deg}deg, var(--card2) ${deg}deg)`;
+  document.getElementById('routine-score-val').style.color = color;
+}
+
+async function saveRoutine() {
+  const piano_mins = parseInt(document.getElementById('hab-piano').value) || 0;
+  const reading_mins = parseInt(document.getElementById('hab-read').value) || 0;
+  const study_hours = parseFloat(document.getElementById('hab-study').value) || 0;
+  const early_wakeup = document.getElementById('hab-wakeup').classList.contains('on');
+  const morning_walk = document.getElementById('hab-walk').classList.contains('on');
+  const supplements = document.getElementById('hab-supps').classList.contains('on');
+
+  try {
+    await apiFetch('/api/routine', 'POST', {
+      date: todayStr, piano_mins, reading_mins, study_hours,
+      early_wakeup, morning_walk, supplements
+    });
+    toast('✅ Routine saved!');
+    routineData = null; // force reload next time
+  } catch(e) { toast('❌ Could not save routine'); }
 }
 
 /* ── Exercise history ── */
@@ -1303,24 +1520,19 @@ function goPanel(id,el){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
-  el.classList.add('active');
+  if(el) el.classList.add('active');
   if(id==='diet') loadFood();
-  if(id==='analysis') loadAnalysis();
+  if(id==='home') loadHome();
+  if(id==='routine') loadRoutine();
 }
 
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
 loadToday();
-// Load streak quietly in background
-apiFetch('/api/analysis').then(data=>{
-  if(data&&data.streak>0){
-    document.getElementById('streak-num').textContent=data.streak;
-    document.getElementById('streak-badge').style.display='flex';
-    // Cache for analysis tab
-    if(!analysisData){analysisData=data;analysisLoaded=true;}
-  }
-}).catch(()=>{});
+// Navigate to home by default
+goPanel('home', document.querySelector('.nav-item[onclick*=\'home\']'));
+
 </script>
 </body>
 </html>

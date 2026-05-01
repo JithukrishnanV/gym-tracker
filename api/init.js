@@ -95,9 +95,26 @@ module.exports = async (req, res) => {
 
     await sql`CREATE INDEX IF NOT EXISTS idx_sleep_date ON sleep_logs(date DESC)`;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS routine_logs (
+        id           SERIAL PRIMARY KEY,
+        date         DATE NOT NULL UNIQUE,
+        piano_mins   INTEGER NOT NULL DEFAULT 0,
+        reading_mins INTEGER NOT NULL DEFAULT 0,
+        early_wakeup BOOLEAN NOT NULL DEFAULT false,
+        morning_walk BOOLEAN NOT NULL DEFAULT false,
+        study_hours  NUMERIC(4,1) NOT NULL DEFAULT 0,
+        supplements  BOOLEAN NOT NULL DEFAULT false,
+        total_score  INTEGER NOT NULL DEFAULT 0,
+        created_at   TIMESTAMPTZ DEFAULT NOW(),
+        updated_at   TIMESTAMPTZ DEFAULT NOW()
+      )`;
+
+    await sql`CREATE INDEX IF NOT EXISTS idx_routine_date ON routine_logs(date DESC)`;
+
     return res.json({
       success: true,
-      message: '✅ Database initialised! All 7 tables + indexes created. You can now use the app.'
+      message: '✅ Database initialised! All 8 tables + indexes created. You can now use the app.'
     });
   } catch (err) {
     console.error(err);

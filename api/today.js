@@ -14,14 +14,19 @@ module.exports = async (req, res) => {
   const sql = neon(process.env.DATABASE_URL);
 
   try {
-    const [weights, activities, wLogs, mLogs, notes, sleepRows] = await Promise.all([
+    const [weights, activities, wLogs, mLogs, notes] = await Promise.all([
       sql`SELECT weight_lb FROM body_weight_logs WHERE date = ${date} ORDER BY created_at DESC LIMIT 1`,
       sql`SELECT activity_type, duration_minutes FROM activity_logs WHERE date = ${date} ORDER BY created_at ASC`,
       sql`SELECT id, exercise, set_number, reps, weight FROM workout_logs WHERE date = ${date} ORDER BY exercise, set_number ASC`,
       sql`SELECT DISTINCT ON (meal_type) meal_type, option_chosen FROM meal_logs WHERE date = ${date} ORDER BY meal_type, created_at DESC`,
       sql`SELECT notes FROM daily_notes WHERE date = ${date} LIMIT 1`,
-      sql`SELECT hours_slept, bedtime, waketime FROM sleep_logs WHERE date = ${date} LIMIT 1`,
     ]);
+
+    // Sleep query is separate so a missing table doesn't break the whole response
+    let sleepRows = [];
+    try {
+      sleepRows = await sql`SELECT hours_slept, bedtime, waketime FROM sleep_logs WHERE date = ${date} LIMIT 1`;
+    } catch (_) { /* sleep_logs table may not exist yet — run /api/init */ }
 
     // Group workout logs by exercise name → array indexed by set_number-1
     const workoutLogs = {};

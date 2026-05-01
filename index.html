@@ -16,7 +16,7 @@
   --text:#f0ede8;--muted:#777;--border:#2a2a2a;--danger:#f06060;--success:#60f09a;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5}
-body{max-width:480px;margin:0 auto;min-height:100%;padding-bottom:70px;overflow-x:hidden}
+body{max-width:480px;margin:0 auto;min-height:100%;padding-bottom:96px;overflow-x:hidden}
 
 /* ── HEADER ── */
 .app-header{background:#111;border-bottom:1px solid var(--border);padding:12px 18px;position:sticky;top:0;z-index:100}
@@ -379,8 +379,9 @@ textarea.inp{resize:none;min-height:72px}
   </div>
 
   <div class="export-row">
-    <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 Export CSV</button>
-    <button class="btn btn-ghost btn-sm" onclick="printSummary()">🖨️ Print / PDF</button>
+    <button class="btn btn-primary btn-sm" onclick="syncFood()">💾 Save Diet</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 CSV</button>
+    <button class="btn btn-ghost btn-sm" onclick="printSummary()">🖨️ Print</button>
   </div>
 
   <div id="food-spinner" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:13px">Loading food log…</div>
@@ -764,7 +765,7 @@ function renderWorkout(){
   const allEx=[...dp[setType],...customExercises];
   let html='<div class="card"><div class="card-header"><span>💪</span><span class="card-title">'+esc(dp.name)+'</span><span class="ml-auto txt-sm txt-muted">Set '+setType+' · '+curDay+'</span></div><div class="card-body-sm" id="ex-body">';
   allEx.forEach((ex,ei)=>{html+=buildExerciseHTML(ex,ei);});
-  html+='</div><div class="add-ex-row"><div class="add-set-btn" style="justify-content:center;color:var(--accent)" onclick="openAddExModal()">＋ Add Exercise</div></div></div>';
+  html+='</div><div class="add-ex-row" style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary btn-sm" style="white-space:nowrap" onclick="saveAllSets()">💾 Save Session</button><div class="add-set-btn" style="color:var(--accent);margin:0;flex:1;justify-content:center" onclick="openAddExModal()">＋ Add Exercise</div></div></div>';
   sec.innerHTML=html;
 }
 
@@ -785,7 +786,7 @@ function buildSetRow(ei,s,saved){
   return `<div class="set-row" id="set-row-${ei}-${s}" data-id="${id}" data-ei="${ei}" data-s="${s}">
     <div class="set-num">${s}</div>
     <input type="number" class="set-inp" id="w-${ei}-${s}" placeholder="lbs" step="2.5" value="${saved?.weight??''}" data-ei="${ei}" data-s="${s}" oninput="schedSave(this)">
-    <input type="number" class="set-inp" id="r-${ei}-${s}" placeholder="${saved?.reps??'reps'}" value="${saved?.reps??''}" data-ei="${ei}" data-s="${s}" oninput="schedSave(this);autoFillReps(${ei},${s})">
+    <input type="number" class="set-inp" id="r-${ei}-${s}" placeholder="${saved?.reps??'reps'}" value="${saved?.reps??''}" data-ei="${ei}" data-s="${s}" oninput="onRepInput(this)">
     <div class="set-check ${done?'done':''}" id="chk-${ei}-${s}" data-ei="${ei}" data-s="${s}" onclick="checkSet(this)">${done?'✓':''}</div>
     <div class="set-del" data-ei="${ei}" data-s="${s}" onclick="deleteSet(this)">×</div>
   </div>`;
@@ -798,18 +799,49 @@ function addSetRow(ei){
   document.getElementById('w-'+ei+'-'+s)?.focus();
 }
 
-function autoFillReps(ei,s){
-  const rVal=document.getElementById('r-'+ei+'-'+s)?.value;
-  if(!rVal) return;
-  const grid=document.getElementById('sets-grid-'+ei);
-  const rows=grid.querySelectorAll('.set-row');
-  rows.forEach(row=>{
-    const rs=parseInt(row.dataset.s);
-    if(rs>s){
-      const rInp=document.getElementById('r-'+ei+'-'+rs);
-      if(rInp&&!rInp.value) rInp.value=rVal;
+/* Auto-fill reps downward with debounce.
+   Tracks which sets were auto-filled so they update when source changes,
+   but manually typed sets are never overwritten. */
+let _afTimers={}, _afFilled=new Set();
+function onRepInput(el){
+  const ei=el.dataset.ei, s=el.dataset.s;
+  _afFilled.delete(ei+'-'+s);          // this set was manually entered
+  schedSave(el);
+  clearTimeout(_afTimers[ei+'-'+s]);
+  _afTimers[ei+'-'+s]=setTimeout(()=>{
+    const val=document.getElementById('r-'+ei+'-'+s)?.value;
+    if(!val) return;
+    const grid=document.getElementById('sets-grid-'+ei);
+    if(!grid) return;
+    grid.querySelectorAll('.set-row').forEach(row=>{
+      const rs=parseInt(row.dataset.s);
+      if(rs>parseInt(s)){
+        const k=ei+'-'+rs;
+        const inp=document.getElementById('r-'+ei+'-'+rs);
+        if(inp&&(!inp.value||_afFilled.has(k))){inp.value=val;_afFilled.add(k);}
+      }
+    });
+  },380);
+}
+async function saveAllSets(){
+  const body=document.getElementById('ex-body');
+  if(!body){toast('No workout loaded');return;}
+  let saved=0,skipped=0;
+  const items=body.querySelectorAll('.ex-item');
+  for(const item of items){
+    const match=item.id.match(/ex-item-(\d+)/);
+    if(!match) continue;
+    const ei=parseInt(match[1]);
+    const grid=document.getElementById('sets-grid-'+ei);
+    if(!grid) continue;
+    const rows=grid.querySelectorAll('.set-row');
+    for(const row of rows){
+      const s=parseInt(row.dataset.s);
+      const w=document.getElementById('w-'+ei+'-'+s)?.value;
+      if(w){await doSaveSet(ei,s,false);saved++;}else skipped++;
     }
-  });
+  }
+  toast(saved?'✅ '+saved+' set'+(saved>1?'s':'')+' saved!':(skipped?'⚠️ Fill in weights to save':'Nothing to save'));
 }
 
 let _timers={};
@@ -913,28 +945,47 @@ function closeVideoModal(e){if(!e||e.target===document.getElementById('vid-modal
 
 async function fetchExerciseDemo(exName){
   const body=document.getElementById('vid-modal-body');
+  const ytLink='<a href="https://www.youtube.com/results?search_query='+encodeURIComponent(exName+' exercise form')+'" target="_blank" style="color:var(--accent2);font-size:12px;display:block;text-align:center;margin-top:12px">📺 Search on YouTube →</a>';
   try{
-    const encoded=encodeURIComponent(exName.toLowerCase().replace(/ \/ /g,' '));
-    const url='https://exercisedb-api.vercel.app/api/v1/exercises/name/'+encoded+'?limit=1';
-    const data=await fetch(url).then(r=>r.json());
-    const exercises=data?.data?.exercises||data?.exercises||[];
+    // Try a few name variations to maximize API match rate
+    const variants=[
+      exName.toLowerCase().replace(/ \/ /g,' ').replace(/[()]/g,'').replace(/\s+/g,' ').trim(),
+      exName.toLowerCase().split(' ')[0], // just first word as fallback
+    ];
+    let exercises=[];
+    for(const name of variants){
+      const url='https://exercisedb-api.vercel.app/api/v1/exercises/name/'+encodeURIComponent(name)+'?limit=1';
+      try{
+        const data=await fetch(url,{signal:AbortSignal.timeout(6000)}).then(r=>r.json());
+        exercises=data?.data?.exercises||data?.exercises||[];
+        if(exercises.length) break;
+      }catch{}
+    }
     if(!exercises.length){
-      body.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)"><div style="font-size:32px">📷</div><div style="margin-top:8px;font-size:12px">No demo found for this exercise.<br>Search it on YouTube for a video guide.</div></div>';
+      body.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)"><div style="font-size:32px">📷</div><div style="margin-top:8px;font-size:12px">No demo found in the exercise library.</div>'+ytLink+'</div>';
       return;
     }
     const ex=exercises[0];
     const gifUrl=ex.gifUrl||ex.gif_url||'';
     const bodyPart=ex.bodyPart||ex.body_part||'';
     const target=ex.targetMuscle||ex.target||'';
+    const equipment=(ex.equipmentList||ex.equipment||[]).join(', ');
     const instructions=ex.instructions||[];
-    body.innerHTML=(gifUrl?'<img class="vid-gif" src="'+gifUrl+'" alt="'+esc(exName)+'" loading="lazy">':'')+
+    body.innerHTML=
+      (gifUrl?'<img class="vid-gif" src="'+gifUrl+'" alt="'+esc(exName)+'" loading="lazy" onerror="this.style.display=\'none\'">':'')+
       '<div class="vid-meta">'+
         (bodyPart?'<span class="vid-tag">'+esc(bodyPart)+'</span>':'')+
-        (target?'<span class="vid-tag highlight">'+esc(target)+'</span>':'')+
+        (target?'<span class="vid-tag highlight">🎯 '+esc(target)+'</span>':'')+
+        (equipment?'<span class="vid-tag">🔧 '+esc(equipment)+'</span>':'')+
       '</div>'+
-      (instructions.length?'<div class="vid-steps"><div class="vid-step-hdr">Instructions</div>'+instructions.map((step,i)=>'<div class="vid-step"><div class="vid-step-num">'+(i+1)+'</div><div>'+esc(step)+'</div></div>').join('')+'</div>':'<div style="font-size:12px;color:var(--muted);margin-top:8px">No step-by-step instructions available.</div>');
+      (instructions.length?
+        '<div class="vid-steps"><div class="vid-step-hdr">How to perform</div>'+
+        instructions.map((step,i)=>'<div class="vid-step"><div class="vid-step-num">'+(i+1)+'</div><div>'+esc(step)+'</div></div>').join('')+
+        '</div>':
+        '<div style="font-size:12px;color:var(--muted);margin-top:8px">No instructions available for this exercise.</div>'
+      )+ytLink;
   }catch(err){
-    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)"><div style="font-size:32px">🌐</div><div style="margin-top:8px;font-size:12px">Could not load demo.<br>Check your internet connection or search YouTube.</div></div>';
+    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)"><div style="font-size:32px">🌐</div><div style="margin-top:8px;font-size:12px">Could not load demo. Check your connection.</div>'+ytLink+'</div>';
   }
 }
 
@@ -984,6 +1035,25 @@ async function toggleFood(el){
     cb.className='food-cb'+(!nowChecked?' checked':'');cb.textContent=!nowChecked?'✓':'';
     updateCalSummary();toast('❌ Could not save — check connection');
   }
+}
+
+async function syncFood(){
+  // Re-save every checked item to make sure nothing was missed
+  const order=['breakfast','lunch','dinner','pre','post'];
+  let saved=0,failed=0;
+  for(const timing of order){
+    for(const item of (FOOD_ITEMS[timing]||[])){
+      const key=timing+'|'+item.name;
+      if(foodState[key]){
+        try{
+          await apiFetch('/api/food','POST',{date:todayStr,meal_timing:timing,food_item:item.name,calories:item.kcal,protein:item.pro,carbs:item.carb,fats:item.fat,checked:true});
+          saved++;
+        }catch{failed++;}
+      }
+    }
+  }
+  if(failed) toast('⚠️ '+saved+' saved, '+failed+' failed');
+  else toast('✅ Diet saved! ('+saved+' items)');
 }
 
 function updateCalSummary(){

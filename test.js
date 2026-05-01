@@ -77,23 +77,26 @@ const CAL_TARGET=2800, PRO_TARGET=155;
 const DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
 const ACTLABELS={gym:'🏋️ Gym',soccer:'⚽ Soccer',run:'🏃 Run',rest:'😴 Rest'};
 
-let today=new Date();
-let todayStr=fmtDate(today);
-let curDay=DAYS[today.getDay()];
-let setType=getSetType();
-let pickedAct=null;
-let td={weight:null,activities:[],workoutLogs:{},notes:'',sleep:null};
-let foodState={};
-let curMealTab='lunch';
-let customExercises=[];  // added for today's session [{n,s,r}]
-let weightChart=null,exChart=null,calChart=null,proChart=null;
-let homeWorkoutChart=null,homeDietChart=null,homeRoutineChart=null;
-let analysisLoaded=false,foodLoaded=false,routineLoaded=false;
-let timerInterval=null,timerStart=0,timerElapsed=0,timerRunning=false,timerLaps=[];
-let calViewDate=new Date(today);
-let analysisData=null;
-let routineData=null;
-let selectedWorkoutDay=null;
+let actualToday = new Date();
+let urlParams = new URLSearchParams(window.location.search);
+let isEmbed = urlParams.get('embed');
+let today = urlParams.get('date') ? new Date(urlParams.get('date') + 'T12:00:00') : new Date();
+let todayStr = fmtDate(today);
+let curDay = DAYS[today.getDay()];
+let setType = getSetType();
+let pickedAct = null;
+let td = {weight:null,activities:[],workoutLogs:{},notes:'',sleep:null};
+let foodState = {};
+let curMealTab = 'lunch';
+let customExercises = [];
+let weightChart = null, exChart = null, calChart = null, proChart = null;
+let homeWorkoutChart = null, homeDietChart = null, homeRoutineChart = null;
+let analysisLoaded = false, foodLoaded = false, routineLoaded = false;
+let timerInterval = null, timerStart = 0, timerElapsed = 0, timerRunning = false, timerLaps = [];
+let calViewDate = new Date(actualToday);
+let analysisData = null;
+let routineData = null;
+let selectedWorkoutDay = null;
 
 /* ═══════════════════════════════════════════
    UTILS
@@ -426,39 +429,36 @@ function openVideoModal(exName){
 }
 function closeVideoModal(e){if(!e||e.target===document.getElementById('vid-modal')) document.getElementById('vid-modal').classList.remove('open');}
 
+let _exCache = null;
 async function fetchExerciseDemo(exName){
   const body=document.getElementById('vid-modal-body');
   const ytLink='<a href="https://www.youtube.com/results?search_query='+encodeURIComponent(exName+' exercise form')+'" target="_blank" style="color:var(--accent2);font-size:12px;display:block;text-align:center;margin-top:12px">📺 Search on YouTube →</a>';
   try{
-    // Try a few name variations to maximize API match rate
+    if(!_exCache) {
+      _exCache = await fetch('https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json').then(r=>r.json());
+    }
     const variants=[
       exName.toLowerCase().replace(/ \/ /g,' ').replace(/[()]/g,'').replace(/\s+/g,' ').trim(),
-      exName.toLowerCase().split(' ')[0], // just first word as fallback
+      exName.toLowerCase().split(' ')[0]
     ];
-    let exercises=[];
+    let ex=null;
     for(const name of variants){
-      const url='https://exercisedb-api.vercel.app/api/v1/exercises/name/'+encodeURIComponent(name)+'?limit=1';
-      try{
-        const data=await fetch(url,{signal:AbortSignal.timeout(6000)}).then(r=>r.json());
-        exercises=data?.data?.exercises||data?.exercises||[];
-        if(exercises.length) break;
-      }catch{}
+      ex = _exCache.find(e => e.name.toLowerCase().includes(name));
+      if(ex) break;
     }
-    if(!exercises.length){
+    if(!ex){
       body.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)"><div style="font-size:32px">📷</div><div style="margin-top:8px;font-size:12px">No demo found in the exercise library.</div>'+ytLink+'</div>';
       return;
     }
-    const ex=exercises[0];
-    const gifUrl=ex.gifUrl||ex.gif_url||'';
-    const bodyPart=ex.bodyPart||ex.body_part||'';
-    const target=ex.targetMuscle||ex.target||'';
-    const equipment=(ex.equipmentList||ex.equipment||[]).join(', ');
-    const instructions=ex.instructions||[];
+    const imagesHtml = (ex.images||[]).slice(0, 2).map(img => '<img src="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/'+img+'" style="width:48%; border-radius:8px; margin-bottom:8px">').join('');
+    const bodyPart = ex.primaryMuscles ? ex.primaryMuscles.join(', ') : '';
+    const target = ex.secondaryMuscles ? ex.secondaryMuscles.join(', ') : '';
+    const equipment = ex.equipment || '';
+    const instructions = ex.instructions || [];
     body.innerHTML=
-      (gifUrl?'<img class="vid-gif" src="'+gifUrl+'" alt="'+esc(exName)+'" loading="lazy" onerror="this.style.display=\'none\'">':'')+
+      '<div style="display:flex;gap:4px;justify-content:center">' + imagesHtml + '</div>' +
       '<div class="vid-meta">'+
-        (bodyPart?'<span class="vid-tag">'+esc(bodyPart)+'</span>':'')+
-        (target?'<span class="vid-tag highlight">🎯 '+esc(target)+'</span>':'')+
+        (bodyPart?'<span class="vid-tag">🎯 '+esc(bodyPart)+'</span>':'')+
         (equipment?'<span class="vid-tag">🔧 '+esc(equipment)+'</span>':'')+
       '</div>'+
       (instructions.length?
@@ -660,7 +660,7 @@ async function loadHome() {
   analysisLoaded = true;
   try {
     const [aData, rData] = await Promise.all([
-      apiFetch('/api/analysis'),
+      apiFetch('/api/insights?type=home'),
       apiFetch('/api/routine?range=7')
     ]);
     analysisData = aData;
@@ -695,7 +695,7 @@ function renderHome() {
   let yesterdayScore = '—';
   let bestScore = '—';
   if(routineData && routineData.length > 0) {
-    const yestDate = new Date();
+    const yestDate = new Date(actualToday);
     yestDate.setDate(yestDate.getDate() - 1);
     const yStr = fmtDate(yestDate);
     const yestObj = routineData.find(r => r.date === yStr);
@@ -712,7 +712,7 @@ function renderHome() {
   // Charts data
   const labels7=[], workoutData=[], dietData=[], routineChartData=[];
   for(let i=6;i>=0;i--){
-    const d=new Date(today);d.setDate(d.getDate()-i);
+    const d=new Date(actualToday);d.setDate(d.getDate()-i);
     const ds=fmtDate(d);
     labels7.push((d.getMonth()+1)+'/'+d.getDate());
     
@@ -958,17 +958,41 @@ function switchDetailTab(section, tab){
   else loadDetailRecords(section);
 }
 
+let detailCharts = {};
 async function loadDetailAnalysis(section){
   try {
+    const commonOpts = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false},ticks:{color:'#666',font:{size:10}}},y:{grid:{color:'#222'},ticks:{color:'#666',font:{size:10}}}} };
+    
     if(section==='workout') {
       const data = await apiFetch('/api/insights?type=workout');
       document.getElementById('wd-top-ex').innerHTML = (data.topExercises||[]).map(e=>'<div class="hist-row"><div>'+e.exercise_name+'</div><div class="hist-val">'+e.sets_done+' sets</div></div>').join('');
+      // Chart
+      if (data.weights && data.weights.length > 0) {
+        const labels = data.weights.map(w => new Date(w.date).getDate()+'/'+(new Date(w.date).getMonth()+1)).reverse();
+        const vals = data.weights.map(w => w.weight_lb).reverse();
+        if(detailCharts.workout) detailCharts.workout.destroy();
+        detailCharts.workout = new Chart(document.getElementById('wd-weight-chart'), { type:'line', data:{labels, datasets:[{data:vals, borderColor:'var(--accent)', tension:0.3, pointBackgroundColor:'var(--accent)'}]}, options:commonOpts });
+      }
     } else if(section==='diet') {
       const data = await apiFetch('/api/insights?type=diet');
       document.getElementById('dd-top-foods').innerHTML = (data.topFoods||[]).map(f=>'<div class="hist-row"><div>'+f.food_item+' ('+f.meal_timing+')</div><div class="hist-val">'+f.times_logged+' logs</div></div>').join('');
+      // Chart
+      if (data.history && data.history.length > 0) {
+        const labels = data.history.map(d => new Date(d.date).getDate()+'/'+(new Date(d.date).getMonth()+1)).reverse();
+        const cals = data.history.map(d => d.total_calories).reverse();
+        if(detailCharts.diet) detailCharts.diet.destroy();
+        detailCharts.diet = new Chart(document.getElementById('dd-cal-chart'), { type:'bar', data:{labels, datasets:[{data:cals, backgroundColor:'var(--accent3)', borderRadius:4}]}, options:commonOpts });
+      }
     } else if(section==='routine') {
       const data = await apiFetch('/api/insights?type=routine');
       document.getElementById('rd-missed').innerHTML = Object.entries(data.missed||{}).map(([k,v])=>'<div class="hist-row"><div>'+k+'</div><div class="hist-val">'+v+' misses</div></div>').join('');
+      // Chart
+      if (data.history && data.history.length > 0) {
+        const labels = data.history.map(d => new Date(d.date).getDate()+'/'+(new Date(d.date).getMonth()+1)).reverse();
+        const scores = data.history.map(d => d.total_score || 0).reverse();
+        if(detailCharts.routine) detailCharts.routine.destroy();
+        detailCharts.routine = new Chart(document.getElementById('rd-score-chart'), { type:'line', data:{labels, datasets:[{data:scores, borderColor:'var(--accent2)', tension:0.3, pointBackgroundColor:'var(--accent2)', fill:true, backgroundColor:'rgba(168,240,150,0.1)'}]}, options:commonOpts });
+      }
     }
   } catch(e) {
     document.getElementById(section==='workout'?'wd-top-ex':section==='diet'?'dd-top-foods':'rd-missed').innerHTML = '<div class="err">Failed to load insights</div>';
@@ -977,32 +1001,44 @@ async function loadDetailAnalysis(section){
 
 function loadDetailRecords(section){
   const el = document.getElementById(section==='workout'?'wd-records-list':section==='diet'?'dd-records-list':'rd-records-list');
-  el.innerHTML = '<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:24px"><div style="font-size:24px;margin-bottom:8px">📅</div><div style="margin-bottom:8px">Select a date to view or edit past records.</div><input type="date" class="inp" value="'+todayStr+'" max="'+fmtDate(new Date())+'" onchange="changeGlobalDate(this.value)" style="margin:12px auto;width:auto;display:block;background:var(--surface)"><br><button class="btn btn-primary btn-sm" onclick="goPanel(\''+section+'\')">Go to '+section+'</button></div></div>';
+  el.innerHTML = '<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:16px"><div style="margin-bottom:8px">Select a date to edit past records independently.</div><input type="date" class="inp" id="date-pick-'+section+'" value="'+todayStr+'" max="'+fmtDate(actualToday)+'" onchange="loadEmbedFrame(\\''+section+'\\', this.value)" style="margin:8px auto;width:auto;display:block;background:var(--surface)"></div></div><div id="embed-wrap-'+section+'" style="margin-top:16px;border-radius:12px;overflow:hidden;min-height:500px"></div>';
+  
+  // Auto-load today's embed
+  loadEmbedFrame(section, todayStr);
+}
+
+function loadEmbedFrame(section, dateVal){
+  const wrap = document.getElementById('embed-wrap-'+section);
+  if(wrap) {
+    wrap.innerHTML = '<iframe src="?date='+dateVal+'&embed='+section+'" style="width:100%;height:800px;border:none;background:var(--bg)"></iframe>';
+  }
 }
 
 function changeGlobalDate(ds){
-  if(!ds) return;
-  todayStr = ds;
-  const d = new Date(ds+'T12:00:00');
-  today = d;
-  curDay = DAYS[d.getDay()];
-  setType = getSetType();
-  selectedWorkoutDay = null;
-  const sel = document.getElementById('workout-plan-sel');
-  if(sel) sel.value = 'AUTO';
-  toast('📅 Date changed to '+ds);
-  
-  foodLoaded = false;
-  routineData = null;
-  loadToday();
-  if(document.getElementById('panel-diet').classList.contains('active') || document.getElementById('panel-diet-detail').classList.contains('active')) loadFood();
-  if(document.getElementById('panel-routine').classList.contains('active') || document.getElementById('panel-routine-detail').classList.contains('active')) loadRoutine();
+  // Legacy function kept for other potential calls
 }
 
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
-loadToday();
-// Navigate to home by default
-goPanel('home', document.querySelector('.nav-item[onclick*=\'home\']'));
+if(isEmbed) {
+  // Hide bottom nav and detail panels, only show the relevant base panel
+  document.querySelector('.bottom-nav').style.display = 'none';
+  document.querySelectorAll('.back-btn, .sub-nav').forEach(el => el.style.display = 'none');
+  
+  if (isEmbed === 'workout') {
+    goPanel('workout', null);
+  } else if (isEmbed === 'diet') {
+    goPanel('diet', null);
+    loadFood();
+  } else if (isEmbed === 'routine') {
+    goPanel('routine', null);
+    loadRoutine();
+  }
+  loadToday();
+} else {
+  loadToday();
+  // Navigate to home by default
+  goPanel('home', document.querySelector('.nav-item[onclick*=\'home\']'));
+}
 

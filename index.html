@@ -778,23 +778,26 @@ const CAL_TARGET=2800, PRO_TARGET=155;
 const DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
 const ACTLABELS={gym:'🏋️ Gym',soccer:'⚽ Soccer',run:'🏃 Run',rest:'😴 Rest'};
 
-let today=new Date();
-let todayStr=fmtDate(today);
-let curDay=DAYS[today.getDay()];
-let setType=getSetType();
-let pickedAct=null;
-let td={weight:null,activities:[],workoutLogs:{},notes:'',sleep:null};
-let foodState={};
-let curMealTab='lunch';
-let customExercises=[];  // added for today's session [{n,s,r}]
-let weightChart=null,exChart=null,calChart=null,proChart=null;
-let homeWorkoutChart=null,homeDietChart=null,homeRoutineChart=null;
-let analysisLoaded=false,foodLoaded=false,routineLoaded=false;
-let timerInterval=null,timerStart=0,timerElapsed=0,timerRunning=false,timerLaps=[];
-let calViewDate=new Date(today);
-let analysisData=null;
-let routineData=null;
-let selectedWorkoutDay=null;
+let actualToday = new Date();
+let urlParams = new URLSearchParams(window.location.search);
+let isEmbed = urlParams.get('embed');
+let today = urlParams.get('date') ? new Date(urlParams.get('date') + 'T12:00:00') : new Date();
+let todayStr = fmtDate(today);
+let curDay = DAYS[today.getDay()];
+let setType = getSetType();
+let pickedAct = null;
+let td = {weight:null,activities:[],workoutLogs:{},notes:'',sleep:null};
+let foodState = {};
+let curMealTab = 'lunch';
+let customExercises = [];
+let weightChart = null, exChart = null, calChart = null, proChart = null;
+let homeWorkoutChart = null, homeDietChart = null, homeRoutineChart = null;
+let analysisLoaded = false, foodLoaded = false, routineLoaded = false;
+let timerInterval = null, timerStart = 0, timerElapsed = 0, timerRunning = false, timerLaps = [];
+let calViewDate = new Date(actualToday);
+let analysisData = null;
+let routineData = null;
+let selectedWorkoutDay = null;
 
 /* ═══════════════════════════════════════════
    UTILS
@@ -1127,39 +1130,36 @@ function openVideoModal(exName){
 }
 function closeVideoModal(e){if(!e||e.target===document.getElementById('vid-modal')) document.getElementById('vid-modal').classList.remove('open');}
 
+let _exCache = null;
 async function fetchExerciseDemo(exName){
   const body=document.getElementById('vid-modal-body');
   const ytLink='<a href="https://www.youtube.com/results?search_query='+encodeURIComponent(exName+' exercise form')+'" target="_blank" style="color:var(--accent2);font-size:12px;display:block;text-align:center;margin-top:12px">📺 Search on YouTube →</a>';
   try{
-    // Try a few name variations to maximize API match rate
+    if(!_exCache) {
+      _exCache = await fetch('https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json').then(r=>r.json());
+    }
     const variants=[
       exName.toLowerCase().replace(/ \/ /g,' ').replace(/[()]/g,'').replace(/\s+/g,' ').trim(),
-      exName.toLowerCase().split(' ')[0], // just first word as fallback
+      exName.toLowerCase().split(' ')[0]
     ];
-    let exercises=[];
+    let ex=null;
     for(const name of variants){
-      const url='https://exercisedb-api.vercel.app/api/v1/exercises/name/'+encodeURIComponent(name)+'?limit=1';
-      try{
-        const data=await fetch(url,{signal:AbortSignal.timeout(6000)}).then(r=>r.json());
-        exercises=data?.data?.exercises||data?.exercises||[];
-        if(exercises.length) break;
-      }catch{}
+      ex = _exCache.find(e => e.name.toLowerCase().includes(name));
+      if(ex) break;
     }
-    if(!exercises.length){
+    if(!ex){
       body.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)"><div style="font-size:32px">📷</div><div style="margin-top:8px;font-size:12px">No demo found in the exercise library.</div>'+ytLink+'</div>';
       return;
     }
-    const ex=exercises[0];
-    const gifUrl=ex.gifUrl||ex.gif_url||'';
-    const bodyPart=ex.bodyPart||ex.body_part||'';
-    const target=ex.targetMuscle||ex.target||'';
-    const equipment=(ex.equipmentList||ex.equipment||[]).join(', ');
-    const instructions=ex.instructions||[];
+    const imagesHtml = (ex.images||[]).slice(0, 2).map(img => '<img src="https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/'+img+'" style="width:48%; border-radius:8px; margin-bottom:8px">').join('');
+    const bodyPart = ex.primaryMuscles ? ex.primaryMuscles.join(', ') : '';
+    const target = ex.secondaryMuscles ? ex.secondaryMuscles.join(', ') : '';
+    const equipment = ex.equipment || '';
+    const instructions = ex.instructions || [];
     body.innerHTML=
-      (gifUrl?'<img class="vid-gif" src="'+gifUrl+'" alt="'+esc(exName)+'" loading="lazy" onerror="this.style.display=\'none\'">':'')+
+      '<div style="display:flex;gap:4px;justify-content:center">' + imagesHtml + '</div>' +
       '<div class="vid-meta">'+
-        (bodyPart?'<span class="vid-tag">'+esc(bodyPart)+'</span>':'')+
-        (target?'<span class="vid-tag highlight">🎯 '+esc(target)+'</span>':'')+
+        (bodyPart?'<span class="vid-tag">🎯 '+esc(bodyPart)+'</span>':'')+
         (equipment?'<span class="vid-tag">🔧 '+esc(equipment)+'</span>':'')+
       '</div>'+
       (instructions.length?
@@ -1361,7 +1361,7 @@ async function loadHome() {
   analysisLoaded = true;
   try {
     const [aData, rData] = await Promise.all([
-      apiFetch('/api/analysis'),
+      apiFetch('/api/insights?type=home'),
       apiFetch('/api/routine?range=7')
     ]);
     analysisData = aData;
@@ -1396,7 +1396,7 @@ function renderHome() {
   let yesterdayScore = '—';
   let bestScore = '—';
   if(routineData && routineData.length > 0) {
-    const yestDate = new Date();
+    const yestDate = new Date(actualToday);
     yestDate.setDate(yestDate.getDate() - 1);
     const yStr = fmtDate(yestDate);
     const yestObj = routineData.find(r => r.date === yStr);
@@ -1413,7 +1413,7 @@ function renderHome() {
   // Charts data
   const labels7=[], workoutData=[], dietData=[], routineChartData=[];
   for(let i=6;i>=0;i--){
-    const d=new Date(today);d.setDate(d.getDate()-i);
+    const d=new Date(actualToday);d.setDate(d.getDate()-i);
     const ds=fmtDate(d);
     labels7.push((d.getMonth()+1)+'/'+d.getDate());
     
@@ -1722,9 +1722,26 @@ function changeGlobalDate(ds){
 /* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
-loadToday();
-// Navigate to home by default
-goPanel('home', document.querySelector('.nav-item[onclick*=\'home\']'));
+if(isEmbed) {
+  // Hide bottom nav and detail panels, only show the relevant base panel
+  document.querySelector('.bottom-nav').style.display = 'none';
+  document.querySelectorAll('.back-btn, .sub-nav').forEach(el => el.style.display = 'none');
+  
+  if (isEmbed === 'workout') {
+    goPanel('workout', null);
+  } else if (isEmbed === 'diet') {
+    goPanel('diet', null);
+    loadFood();
+  } else if (isEmbed === 'routine') {
+    goPanel('routine', null);
+    loadRoutine();
+  }
+  loadToday();
+} else {
+  loadToday();
+  // Navigate to home by default
+  goPanel('home', document.querySelector('.nav-item[onclick*=\'home\']'));
+}
 
 </script>
 </body>

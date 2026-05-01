@@ -1662,13 +1662,13 @@ function switchDetailTab(section, tab){
 async function loadDetailAnalysis(section){
   try {
     if(section==='workout') {
-      const data = await apiFetch('/api/analysis_gym');
+      const data = await apiFetch('/api/insights?type=workout');
       document.getElementById('wd-top-ex').innerHTML = (data.topExercises||[]).map(e=>'<div class="hist-row"><div>'+e.exercise_name+'</div><div class="hist-val">'+e.sets_done+' sets</div></div>').join('');
     } else if(section==='diet') {
-      const data = await apiFetch('/api/analysis_food');
+      const data = await apiFetch('/api/insights?type=diet');
       document.getElementById('dd-top-foods').innerHTML = (data.topFoods||[]).map(f=>'<div class="hist-row"><div>'+f.food_item+' ('+f.meal_timing+')</div><div class="hist-val">'+f.times_logged+' logs</div></div>').join('');
     } else if(section==='routine') {
-      const data = await apiFetch('/api/analysis_routine');
+      const data = await apiFetch('/api/insights?type=routine');
       document.getElementById('rd-missed').innerHTML = Object.entries(data.missed||{}).map(([k,v])=>'<div class="hist-row"><div>'+k+'</div><div class="hist-val">'+v+' misses</div></div>').join('');
     }
   } catch(e) {

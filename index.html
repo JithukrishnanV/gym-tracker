@@ -35,8 +35,13 @@ body{max-width:480px;margin:0 auto;min-height:100%;padding-bottom:120px;overflow
 .nav-icon{font-size:18px;display:block;margin-bottom:2px}
 
 /* ── PANELS ── */
-.panel{display:none;padding:16px 18px}
+.panel{display:none;animation:fadeIn .3s;padding:16px 18px 100px}
 .panel.active{display:block}
+.html-chart{display:flex;align-items:flex-end;justify-content:space-between;height:120px;padding-top:10px}
+.bar-wrap{display:flex;flex-direction:column;align-items:center;width:12%;height:100%;justify-content:flex-end}
+.bar-val{font-size:10px;color:var(--text);margin-bottom:4px;opacity:0.9;font-weight:600;text-align:center}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:height 0.3s}
+.bar-lbl{font-size:9px;color:var(--muted);margin-top:4px;text-transform:uppercase;text-align:center}
 
 /* ── CARDS ── */
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
@@ -421,12 +426,6 @@ textarea.inp{resize:none;min-height:72px}
     </div>
   </div>
 
-  <div class="export-row">
-    <button class="btn btn-primary btn-sm" onclick="syncFood()">💾 Save Diet</button>
-    <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 CSV</button>
-    <button class="btn btn-ghost btn-sm" onclick="printSummary()">🖨️ Print</button>
-  </div>
-
   <div id="food-spinner" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:13px">Loading food log…</div>
 
   <div class="food-section">
@@ -469,6 +468,12 @@ textarea.inp{resize:none;min-height:72px}
   </div>
 
   <div style="font-size:10px;color:var(--muted);text-align:center;padding:4px 0 8px">* Calories are approximate values</div>
+  
+  <div class="export-row" style="margin-top:20px">
+    <button class="btn btn-primary btn-sm" onclick="syncFood()">💾 Save Diet</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 CSV</button>
+    <button class="btn btn-ghost btn-sm" onclick="printSummary()">🖨️ Print</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════
@@ -487,21 +492,21 @@ textarea.inp{resize:none;min-height:72px}
   <div class="card" onclick="goPanel('workout-detail')" style="cursor:pointer">
     <div class="card-header"><span>💪</span><span class="card-title">Workout</span><span class="ml-auto txt-sm txt-muted">Last 7 Days</span></div>
     <div class="card-body">
-      <div class="chart-wrap-sm"><canvas id="home-workout-chart"></canvas></div>
+      <div id="home-workout-chart" class="html-chart"></div>
     </div>
   </div>
 
   <div class="card" onclick="goPanel('diet-detail')" style="cursor:pointer">
     <div class="card-header"><span>🍽️</span><span class="card-title">Diet</span><span class="ml-auto txt-sm txt-muted">Last 7 Days</span></div>
     <div class="card-body">
-      <div class="chart-wrap-sm"><canvas id="home-diet-chart"></canvas></div>
+      <div id="home-diet-chart" class="html-chart"></div>
     </div>
   </div>
 
   <div class="card" onclick="goPanel('routine-detail')" style="cursor:pointer">
     <div class="card-header"><span>🌟</span><span class="card-title">Routine</span><span class="ml-auto txt-sm txt-muted">Last 7 Days</span></div>
     <div class="card-body">
-      <div class="chart-wrap-sm"><canvas id="home-routine-chart"></canvas></div>
+      <div id="home-routine-chart" class="html-chart"></div>
     </div>
   </div>
 
@@ -1350,6 +1355,24 @@ function printSummary(){
   win.document.close();
 }
 
+function renderHTMLChart(containerId, labels, data, color, emptyLabel) {
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    const maxVal = Math.max(...data, 1);
+    let html = '';
+    for(let i=0; i<labels.length; i++) {
+      const val = data[i];
+      const pct = (val / maxVal) * 100;
+      const displayVal = val > 0 ? (val >= 1000 ? (val/1000).toFixed(1)+'k' : val) : '-';
+      html += '<div class="bar-wrap">' +
+              '<div class="bar-val">'+displayVal+'</div>' +
+              '<div class="bar-fill" style="height:'+pct+'%;background:'+color+'"></div>' +
+              '<div class="bar-lbl">'+labels[i]+'</div>' +
+              '</div>';
+    }
+    container.innerHTML = html;
+  }
+
 /* ═══════════════════════════════════════════
    ANALYSIS TAB
 ═══════════════════════════════════════════ */
@@ -1430,17 +1453,10 @@ function renderHome() {
   }
 
   // Draw mini charts
-  const commonOpts = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{enabled:false}}, scales:{x:{display:false}, y:{display:false}}, layout:{padding:0} };
-
-  if(homeWorkoutChart) homeWorkoutChart.destroy();
-  homeWorkoutChart = new Chart(document.getElementById('home-workout-chart'), { type:'bar', data:{labels:labels7, datasets:[{data:workoutData, backgroundColor:workoutData.map(v=>v?'var(--accent)':'var(--card2)'), borderRadius:4}]}, options:commonOpts });
-
-  if(homeDietChart) homeDietChart.destroy();
-  homeDietChart = new Chart(document.getElementById('home-diet-chart'), { type:'bar', data:{labels:labels7, datasets:[{data:dietData, backgroundColor:'var(--accent3)', borderRadius:4}, {data:Array(7).fill(2800), type:'line', borderColor:'rgba(255,255,255,0.2)', borderDash:[4,4], borderWidth:1, pointRadius:0, fill:false}]}, options:commonOpts });
-
-  if(homeRoutineChart) homeRoutineChart.destroy();
-  homeRoutineChart = new Chart(document.getElementById('home-routine-chart'), { type:'bar', data:{labels:labels7, datasets:[{data:routineChartData, backgroundColor:'var(--accent2)', borderRadius:4}, {data:Array(7).fill(70), type:'line', borderColor:'rgba(255,255,255,0.2)', borderDash:[4,4], borderWidth:1, pointRadius:0, fill:false}]}, options:commonOpts });
-
+  renderHTMLChart('home-workout-chart', labels7, workoutData, 'var(--accent)', 'No Workouts');
+  renderHTMLChart('home-diet-chart', labels7, dietData, 'var(--accent3)', 'No Diet Logs');
+  renderHTMLChart('home-routine-chart', labels7, routineChartData, 'var(--accent2)', 'No Routine Logs');
+  
   renderCalendar();
 }
 
@@ -1640,8 +1656,32 @@ function goPanel(id,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   if(el) el.classList.add('active');
+  
+  function renderHTMLChart(containerId, labels, data, color, emptyLabel) {
+    const container = document.getElementById(containerId);
+    if(!container) return;
+    const maxVal = Math.max(...data, 1);
+    let html = '';
+    for(let i=0; i<labels.length; i++) {
+      const val = data[i];
+      const pct = (val / maxVal) * 100;
+      const displayVal = val > 0 ? (val >= 1000 ? (val/1000).toFixed(1)+'k' : val) : '-';
+      html += '<div class="bar-wrap">' +
+              '<div class="bar-val">'+displayVal+'</div>' +
+              '<div class="bar-fill" style="height:'+pct+'%;background:'+color+'"></div>' +
+              '<div class="bar-lbl">'+labels[i]+'</div>' +
+              '</div>';
+    }
+    container.innerHTML = html;
+  }
+
   if(id==='diet') loadFood();
-  if(id==='home') loadHome();
+  if(id==='home') {
+    loadHome();
+    renderHTMLChart('home-workout-chart', labels7, workoutData, 'var(--accent)', 'No Workouts');
+    renderHTMLChart('home-diet-chart', labels7, dietData, 'var(--accent3)', 'No Diet Logs');
+    renderHTMLChart('home-routine-chart', labels7, routineChartData, 'var(--accent2)', 'No Routine Logs');
+  }
   if(id==='routine') loadRoutine();
   if(id.endsWith('-detail')){
     const section=id.split('-')[0];
@@ -1666,8 +1706,17 @@ async function loadDetailAnalysis(section){
     
     if(section==='workout') {
       const data = await apiFetch('/api/insights?type=workout');
-      document.getElementById('wd-top-ex').innerHTML = (data.topExercises||[]).map(e=>'<div class="hist-row"><div>'+e.exercise_name+'</div><div class="hist-val">'+e.sets_done+' sets</div></div>').join('');
-      // Chart
+      let html = '';
+      if(data.topExercises && data.topExercises.length > 0) {
+        const maxSets = Math.max(...data.topExercises.map(e=>parseInt(e.sets_done)));
+        html += '<div style="margin-bottom:12px;color:var(--muted);font-size:12px">Most Frequent Exercises (Last 30 Days)</div>';
+        html += data.topExercises.map(e=>{
+          const pct = (parseInt(e.sets_done)/maxSets)*100;
+          return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>'+e.exercise_name+'</span><span style="color:var(--accent)">'+e.sets_done+' sets</span></div><div style="width:100%;background:rgba(255,255,255,0.05);height:6px;border-radius:3px;overflow:hidden"><div style="width:'+pct+'%;background:var(--accent);height:100%"></div></div></div>';
+        }).join('');
+      } else html = '<div class="err">No data</div>';
+      document.getElementById('wd-top-ex').innerHTML = html;
+      
       if (data.weights && data.weights.length > 0) {
         const labels = data.weights.map(w => new Date(w.date).getDate()+'/'+(new Date(w.date).getMonth()+1)).reverse();
         const vals = data.weights.map(w => w.weight_lb).reverse();
@@ -1676,8 +1725,19 @@ async function loadDetailAnalysis(section){
       }
     } else if(section==='diet') {
       const data = await apiFetch('/api/insights?type=diet');
-      document.getElementById('dd-top-foods').innerHTML = (data.topFoods||[]).map(f=>'<div class="hist-row"><div>'+f.food_item+' ('+f.meal_timing+')</div><div class="hist-val">'+f.times_logged+' logs</div></div>').join('');
-      // Chart
+      let html = '';
+      if (data.history && data.history.length > 0) {
+        const avgPro = Math.round(data.history.reduce((s,d)=>s+(parseFloat(d.total_protein)||0),0)/data.history.length);
+        const avgCarb = Math.round(data.history.reduce((s,d)=>s+(parseFloat(d.total_carbs)||0),0)/data.history.length);
+        const avgFat = Math.round(data.history.reduce((s,d)=>s+(parseFloat(d.total_fats)||0),0)/data.history.length);
+        html += '<div style="margin-bottom:16px;background:var(--surface);padding:12px;border-radius:12px"><div style="color:var(--muted);font-size:12px;margin-bottom:8px">Daily Averages (Last 30 Days)</div><div style="display:flex;justify-content:space-between"><div style="text-align:center"><div style="color:var(--accent2);font-weight:600;font-size:16px">'+avgPro+'g</div><div style="font-size:10px;color:var(--muted)">Protein</div></div><div style="text-align:center"><div style="color:var(--accent3);font-weight:600;font-size:16px">'+avgCarb+'g</div><div style="font-size:10px;color:var(--muted)">Carbs</div></div><div style="text-align:center"><div style="color:var(--accent4);font-weight:600;font-size:16px">'+avgFat+'g</div><div style="font-size:10px;color:var(--muted)">Fats</div></div></div></div>';
+      }
+      if(data.topFoods && data.topFoods.length > 0) {
+        html += '<div style="margin-bottom:12px;color:var(--muted);font-size:12px">Most Logged Foods</div>';
+        html += data.topFoods.map(f=>'<div class="hist-row"><div>'+f.food_item+' <span style="color:var(--muted);font-size:10px">('+f.meal_timing+')</span></div><div class="hist-val" style="color:var(--accent3)">'+f.times_logged+'x</div></div>').join('');
+      } else if (!html) html = '<div class="err">No data</div>';
+      document.getElementById('dd-top-foods').innerHTML = html;
+      
       if (data.history && data.history.length > 0) {
         const labels = data.history.map(d => new Date(d.date).getDate()+'/'+(new Date(d.date).getMonth()+1)).reverse();
         const cals = data.history.map(d => d.total_calories).reverse();
@@ -1686,8 +1746,18 @@ async function loadDetailAnalysis(section){
       }
     } else if(section==='routine') {
       const data = await apiFetch('/api/insights?type=routine');
-      document.getElementById('rd-missed').innerHTML = Object.entries(data.missed||{}).map(([k,v])=>'<div class="hist-row"><div>'+k+'</div><div class="hist-val">'+v+' misses</div></div>').join('');
-      // Chart
+      let html = '';
+      if(data.totalDays > 0) {
+        html += '<div style="margin-bottom:12px;color:var(--muted);font-size:12px">Habit Consistency (Last 30 Days)</div>';
+        Object.entries(data.missed||{}).forEach(([k,v])=>{
+          const success = data.totalDays - v;
+          const pct = Math.round((success/data.totalDays)*100);
+          let col = pct>80 ? 'var(--accent)' : (pct>50 ? 'var(--accent3)' : 'var(--accent4)');
+          html += '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;text-transform:capitalize"><span>'+k+'</span><span style="color:'+col+'">'+pct+'%</span></div><div style="width:100%;background:rgba(255,255,255,0.05);height:6px;border-radius:3px;overflow:hidden"><div style="width:'+pct+'%;background:'+col+';height:100%"></div></div></div>';
+        });
+      } else html = '<div class="err">No data</div>';
+      document.getElementById('rd-missed').innerHTML = html;
+      
       if (data.history && data.history.length > 0) {
         const labels = data.history.map(d => new Date(d.date).getDate()+'/'+(new Date(d.date).getMonth()+1)).reverse();
         const scores = data.history.map(d => d.total_score || 0).reverse();
@@ -1702,10 +1772,44 @@ async function loadDetailAnalysis(section){
 
 function loadDetailRecords(section){
   const el = document.getElementById(section==='workout'?'wd-records-list':section==='diet'?'dd-records-list':'rd-records-list');
-  el.innerHTML = '<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:16px"><div style="margin-bottom:8px">Select a date to edit past records independently.</div><input type="date" class="inp" id="date-pick-'+section+'" value="'+todayStr+'" max="'+fmtDate(actualToday)+'" onchange="loadEmbedFrame(\''+section+'\', this.value)" style="margin:8px auto;width:auto;display:block;background:var(--surface)"></div></div><div id="embed-wrap-'+section+'" style="margin-top:16px;border-radius:12px;overflow:hidden;min-height:500px"></div>';
+  let datesHtml = '<div style="display:flex;overflow-x:auto;gap:8px;padding-bottom:12px;scrollbar-width:none" class="date-scroll-wrap">';
+  datesHtml += '<div style="flex-shrink:0;width:50px;display:flex;align-items:center;justify-content:center;background:var(--surface);border-radius:12px;cursor:pointer;position:relative" onclick="document.getElementById(\'hidden-date-'+section+'\').showPicker()"><span style="font-size:20px">📅</span><input type="date" id="hidden-date-'+section+'" style="position:absolute;width:1px;height:1px;opacity:0;border:none" onchange="loadDetailRecordsWithDate(\''+section+'\', this.value)"></div>';
   
-  // Auto-load today's embed
+  for(let i=0; i<14; i++){
+    const d = new Date(actualToday);
+    d.setDate(d.getDate() - i);
+    const ds = fmtDate(d);
+    const dLbl = d.toLocaleDateString('en-US',{weekday:'short', month:'numeric', day:'numeric'});
+    const isToday = ds === todayStr;
+    const bg = isToday ? 'var(--accent)' : 'var(--surface)';
+    const col = isToday ? '#000' : 'var(--text)';
+    datesHtml += '<div style="flex-shrink:0;padding:12px 16px;background:'+bg+';color:'+col+';border-radius:12px;cursor:pointer;font-weight:600;font-size:13px;border:1px solid rgba(255,255,255,0.05)" onclick="loadDetailRecordsWithDate(\''+section+'\', \''+ds+'\')">'+dLbl+'</div>';
+  }
+  datesHtml += '</div>';
+
+  el.innerHTML = '<div style="margin-bottom:16px"><div style="color:var(--muted);font-size:13px;margin-bottom:8px">Select a date to edit past records</div>' + datesHtml + '</div><div id="embed-wrap-'+section+'" style="border-radius:12px;overflow:hidden;min-height:500px"></div>';
+  
   loadEmbedFrame(section, todayStr);
+}
+
+function loadDetailRecordsWithDate(section, dateVal) {
+  // Update visually selected date
+  const el = document.getElementById(section==='workout'?'wd-records-list':section==='diet'?'dd-records-list':'rd-records-list');
+  const scrollWrap = el.querySelector('.date-scroll-wrap');
+  if(scrollWrap) {
+    const children = scrollWrap.children;
+    for(let i=1; i<children.length; i++) {
+      const child = children[i];
+      if(child.getAttribute('onclick').includes(dateVal)) {
+        child.style.background = 'var(--accent)';
+        child.style.color = '#000';
+      } else {
+        child.style.background = 'var(--surface)';
+        child.style.color = 'var(--text)';
+      }
+    }
+  }
+  loadEmbedFrame(section, dateVal);
 }
 
 function loadEmbedFrame(section, dateVal){

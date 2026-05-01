@@ -12,7 +12,8 @@ module.exports = async (req, res) => {
       const acts = await sql`SELECT date, activity_type, duration_minutes FROM activity_logs WHERE date >= NOW() - INTERVAL '30 days' ORDER BY date DESC`;
       const topExercises = await sql`SELECT exercise as exercise_name, COUNT(*) as sets_done, MAX(weight) as max_weight FROM workout_logs WHERE date >= NOW() - INTERVAL '30 days' GROUP BY exercise ORDER BY sets_done DESC LIMIT 10`;
       const weights = await sql`SELECT date, weight_lb FROM body_weight_logs WHERE date >= NOW() - INTERVAL '30 days' ORDER BY date DESC`;
-      return res.json({ activities: acts, topExercises, weights });
+      const volumeHistory = await sql`SELECT date, COUNT(*) as sets, SUM(weight * reps) as volume FROM workout_logs WHERE date >= NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date DESC`;
+      return res.json({ activities: acts, topExercises, weights, volumeHistory });
     }
     
     if (type === 'home') {
@@ -53,7 +54,10 @@ module.exports = async (req, res) => {
     }
     
     if (type === 'routine') {
-      const rows = await sql`SELECT * FROM routine_logs WHERE date >= NOW() - INTERVAL '30 days' ORDER BY date DESC`;
+      const [rows, sleepRows] = await Promise.all([
+        sql`SELECT * FROM routine_logs WHERE date >= NOW() - INTERVAL '30 days' ORDER BY date DESC`,
+        sql`SELECT date, hours_slept, bedtime, waketime FROM sleep_logs WHERE date >= NOW() - INTERVAL '30 days' ORDER BY date DESC`
+      ]);
       let totalDays = rows.length || 1;
       let missed = { piano: 0, reading: 0, wakeup: 0, walk: 0, study: 0, supps: 0 };
       rows.forEach(r => {
@@ -64,7 +68,7 @@ module.exports = async (req, res) => {
         if ((parseFloat(r.study_hours) || 0) === 0) missed.study++;
         if (!r.supplements) missed.supps++;
       });
-      return res.json({ history: rows, missed, totalDays });
+      return res.json({ history: rows, missed, totalDays, sleepHistory: sleepRows });
     }
 
     return res.status(400).json({ error: 'Invalid type' });

@@ -1678,7 +1678,7 @@ async function loadDetailAnalysis(section){
 
 function loadDetailRecords(section){
   const el = document.getElementById(section==='workout'?'wd-records-list':section==='diet'?'dd-records-list':'rd-records-list');
-  el.innerHTML = '<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:24px"><div style="font-size:24px;margin-bottom:8px">📅</div><div style="margin-bottom:8px">Select a date to view or edit past records.</div><input type="date" class="inp" value="'+todayStr+'" max="'+fmtDate(new Date())+'" onchange="changeGlobalDate(this.value)" style="margin:12px auto;width:auto;display:block;background:var(--surface)"><br><button class="btn btn-primary btn-sm" onclick="goPanel(\\''+section+'\\')">Go to '+section+'</button></div></div>';
+  el.innerHTML = '<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:24px"><div style="font-size:24px;margin-bottom:8px">📅</div><div style="margin-bottom:8px">Select a date to view or edit past records.</div><input type="date" class="inp" value="'+todayStr+'" max="'+fmtDate(new Date())+'" onchange="changeGlobalDate(this.value)" style="margin:12px auto;width:auto;display:block;background:var(--surface)"><br><button class="btn btn-primary btn-sm" onclick="goPanel(\''+section+'\')">Go to '+section+'</button></div></div>';
 }
 
 function changeGlobalDate(ds){

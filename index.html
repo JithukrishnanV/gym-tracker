@@ -16,7 +16,7 @@
   --text:#f0ede8;--muted:#777;--border:#2a2a2a;--danger:#f06060;--success:#60f09a;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.5}
-body{max-width:480px;margin:0 auto;min-height:100%;padding-bottom:96px;overflow-x:hidden}
+body{max-width:480px;margin:0 auto;min-height:100%;padding-bottom:120px;overflow-x:hidden}
 
 /* ── HEADER ── */
 .app-header{background:#111;border-bottom:1px solid var(--border);padding:12px 18px;position:sticky;top:0;z-index:100}
@@ -241,6 +241,18 @@ input[type=number]{-moz-appearance:textfield}
 .pill-toggle{width:60px;height:32px;border-radius:16px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;transition:all 0.2s}
 .pill-toggle.on{background:rgba(200,240,96,0.15);border-color:var(--accent);color:var(--accent)}
 
+/* ── DETAILS & RECORDS ── */
+.detail-header{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.back-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--muted);cursor:pointer;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.sub-nav{display:flex;gap:10px;margin-bottom:16px}
+.sub-nav-btn{flex:1;text-align:center;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;cursor:pointer;transition:all 0.2s}
+.sub-nav-btn.active{background:var(--card2);color:var(--accent);border-color:var(--accent)}
+.record-day{background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden}
+.record-day-hdr{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:var(--surface)}
+.record-day-body{padding:12px 16px;border-top:1px solid var(--border);display:none}
+.record-day.open .record-day-body{display:block}
+.qty-btn{background:var(--card2);border:1px solid var(--border);color:var(--text);width:26px;height:26px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;line-height:1}
+
 /* ── MISC ── */
 .loading{text-align:center;padding:32px;color:var(--muted);font-size:13px}
 .err{text-align:center;padding:24px;color:var(--danger);font-size:13px}
@@ -347,6 +359,19 @@ textarea.inp{resize:none;min-height:72px}
       </div>
     </div>
 
+    <!-- Workout Plan Selection -->
+    <div class="card" style="margin-bottom:12px;border-color:var(--accent)">
+      <div class="card-body" style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600;font-size:13px"><span style="margin-right:6px">📅</span> Plan Override:</span>
+        <select class="inp" id="workout-plan-sel" onchange="changeWorkoutPlan(this.value)" style="width:auto;padding:6px 10px;font-size:13px;background:var(--card2)">
+          <option value="AUTO">Auto (Today)</option>
+          <option value="MON">Monday (Chest)</option>
+          <option value="TUE">Tuesday (Legs A)</option>
+          <option value="WED">Wednesday (Legs B)</option>
+          <option value="THU">Thursday (Back)</option>
+        </select>
+      </div>
+    </div>
     <!-- Workout -->
     <div id="workout-section"></div>
 
@@ -367,6 +392,10 @@ textarea.inp{resize:none;min-height:72px}
      DIET PANEL
 ══════════════════════════════════════════ -->
 <div class="panel" id="panel-diet">
+
+  <div id="diet-yesterday" style="background:var(--card);padding:10px 16px;border-radius:8px;border:1px solid var(--border);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)">
+    <span>Yesterday:</span> <span id="diet-yest-val" style="color:var(--accent3);font-weight:600">-- kcal</span>
+  </div>
 
   <div class="cal-bar">
     <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Calories today</div>
@@ -455,21 +484,21 @@ textarea.inp{resize:none;min-height:72px}
     <div class="stat-card"><div class="stat-big" style="color:var(--accent3)" id="home-cw">—</div><div class="stat-lbl">Current lb</div></div>
   </div>
 
-  <div class="card" onclick="goPanel('workout', document.querySelector('.nav-item[onclick*=\'workout\']'))" style="cursor:pointer">
+  <div class="card" onclick="goPanel('workout-detail')" style="cursor:pointer">
     <div class="card-header"><span>💪</span><span class="card-title">Workout</span><span class="ml-auto txt-sm txt-muted">Last 7 Days</span></div>
     <div class="card-body">
       <div class="chart-wrap-sm"><canvas id="home-workout-chart"></canvas></div>
     </div>
   </div>
 
-  <div class="card" onclick="goPanel('diet', document.querySelector('.nav-item[onclick*=\'diet\']'))" style="cursor:pointer">
+  <div class="card" onclick="goPanel('diet-detail')" style="cursor:pointer">
     <div class="card-header"><span>🍽️</span><span class="card-title">Diet</span><span class="ml-auto txt-sm txt-muted">Last 7 Days</span></div>
     <div class="card-body">
       <div class="chart-wrap-sm"><canvas id="home-diet-chart"></canvas></div>
     </div>
   </div>
 
-  <div class="card" onclick="goPanel('routine', document.querySelector('.nav-item[onclick*=\'routine\']'))" style="cursor:pointer">
+  <div class="card" onclick="goPanel('routine-detail')" style="cursor:pointer">
     <div class="card-header"><span>🌟</span><span class="card-title">Routine</span><span class="ml-auto txt-sm txt-muted">Last 7 Days</span></div>
     <div class="card-body">
       <div class="chart-wrap-sm"><canvas id="home-routine-chart"></canvas></div>
@@ -603,6 +632,57 @@ textarea.inp{resize:none;min-height:72px}
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════
+     DRILL DOWN PANELS
+══════════════════════════════════════════ -->
+<div class="panel" id="panel-workout-detail">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goPanel('home')">← Back</button>
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--accent); letter-spacing:1px">Workout Insights</div>
+  </div>
+  <div class="sub-nav">
+    <div class="sub-nav-btn active" id="btn-workout-analysis" onclick="switchDetailTab('workout','analysis')">Analysis</div>
+    <div class="sub-nav-btn" id="btn-workout-records" onclick="switchDetailTab('workout','records')">Records</div>
+  </div>
+  <div id="workout-analysis">
+    <div class="card"><div class="card-header"><span>💪</span><span class="card-title">Top Exercises</span></div><div class="card-body" id="wd-top-ex">Loading...</div></div>
+    <div class="card"><div class="card-header"><span>⚖️</span><span class="card-title">Weight History</span></div><div class="card-body"><div class="chart-wrap"><canvas id="wd-weight-chart"></canvas></div></div></div>
+  </div>
+  <div id="workout-records" style="display:none"><div id="wd-records-list">Loading...</div></div>
+</div>
+
+<div class="panel" id="panel-diet-detail">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goPanel('home')">← Back</button>
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--accent3); letter-spacing:1px">Diet Insights</div>
+  </div>
+  <div class="sub-nav">
+    <div class="sub-nav-btn active" id="btn-diet-analysis" onclick="switchDetailTab('diet','analysis')">Analysis</div>
+    <div class="sub-nav-btn" id="btn-diet-records" onclick="switchDetailTab('diet','records')">Records</div>
+  </div>
+  <div id="diet-analysis">
+    <div class="card"><div class="card-header"><span>🍽️</span><span class="card-title">Calories (Last 30 Days)</span></div><div class="card-body"><div class="chart-wrap"><canvas id="dd-cal-chart"></canvas></div></div></div>
+    <div class="card"><div class="card-header"><span>🔥</span><span class="card-title">Top Foods</span></div><div class="card-body" id="dd-top-foods">Loading...</div></div>
+  </div>
+  <div id="diet-records" style="display:none"><div id="dd-records-list">Loading...</div></div>
+</div>
+
+<div class="panel" id="panel-routine-detail">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goPanel('home')">← Back</button>
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--accent2); letter-spacing:1px">Routine Insights</div>
+  </div>
+  <div class="sub-nav">
+    <div class="sub-nav-btn active" id="btn-routine-analysis" onclick="switchDetailTab('routine','analysis')">Analysis</div>
+    <div class="sub-nav-btn" id="btn-routine-records" onclick="switchDetailTab('routine','records')">Records</div>
+  </div>
+  <div id="routine-analysis">
+    <div class="card"><div class="card-header"><span>📉</span><span class="card-title">Habits Missed Most</span></div><div class="card-body" id="rd-missed">Loading...</div></div>
+    <div class="card"><div class="card-header"><span>📈</span><span class="card-title">Score Trend</span></div><div class="card-body"><div class="chart-wrap"><canvas id="rd-score-chart"></canvas></div></div></div>
+  </div>
+  <div id="routine-records" style="display:none"><div id="rd-records-list">Loading...</div></div>
+</div>
+
 <!-- ═══════ ADD EXERCISE MODAL ═══════ -->
 <div class="add-ex-overlay" id="add-ex-modal" onclick="closeAddExModal(event)">
   <div class="add-ex-sheet" onclick="event.stopPropagation()">
@@ -714,12 +794,13 @@ let timerInterval=null,timerStart=0,timerElapsed=0,timerRunning=false,timerLaps=
 let calViewDate=new Date(today);
 let analysisData=null;
 let routineData=null;
+let selectedWorkoutDay=null;
 
 /* ═══════════════════════════════════════════
    UTILS
 ═══════════════════════════════════════════ */
 function fmtDate(d){return d.toISOString().split('T')[0];}
-function getSetType(){const d=new Date();const j=new Date(d.getFullYear(),0,1);const wk=Math.ceil(((d-j)/864e5+j.getDay()+1)/7);return wk%2===1?'A':'B';}
+function getSetType(){const d=new Date(today);const j=new Date(d.getFullYear(),0,1);const wk=Math.ceil(((d-j)/864e5+j.getDay()+1)/7);return wk%2===1?'A':'B';}
 function toast(msg,ms=2200){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),ms);}
 function isGym(d){return['MON','TUE','WED','THU'].includes(d);}
 function isSoccer(d){return['FRI','SAT'].includes(d);}
@@ -849,17 +930,24 @@ function timerLap(){
 }
 
 /* ── Workout ── */
+function changeWorkoutPlan(plan){
+  selectedWorkoutDay = plan;
+  renderWorkout();
+}
+
 function renderWorkout(){
   const sec=document.getElementById('workout-section');
   const hasGym=td.activities?.some(a=>a.activity_type==='gym');
-  if(!isGym(curDay)&&!hasGym){
-    if(isSoccer(curDay)){sec.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:20px"><div style="font-size:32px">⚽</div><div style="font-size:13px;color:var(--muted);margin-top:8px">Soccer Day — log gym activity above to show workout</div></div></div>';}
-    else{sec.innerHTML='';}
+  let useDay = selectedWorkoutDay && selectedWorkoutDay !== 'AUTO' ? selectedWorkoutDay : curDay;
+
+  if(useDay==='REST' || (!isGym(useDay)&&!hasGym)){
+    if(isSoccer(useDay)){sec.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:20px"><div style="font-size:32px">⚽</div><div style="font-size:13px;color:var(--muted);margin-top:8px">Soccer Day — log gym activity above to show workout</div></div></div>';}
+    else{sec.innerHTML='<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:20px"><div style="font-size:32px">😴</div><div style="margin-top:8px">Rest Day selected</div></div></div>';}
     return;
   }
-  const dp=PLAN[curDay]||PLAN.MON;
+  const dp=PLAN[useDay]||PLAN.MON;
   const allEx=[...dp[setType],...customExercises];
-  let html='<div class="card"><div class="card-header"><span>💪</span><span class="card-title">'+esc(dp.name)+'</span><span class="ml-auto txt-sm txt-muted">Set '+setType+' · '+curDay+'</span></div><div class="card-body-sm" id="ex-body">';
+  let html='<div class="card"><div class="card-header"><span>💪</span><span class="card-title">'+esc(dp.name)+'</span><span class="ml-auto txt-sm txt-muted">Set '+setType+' · '+useDay+'</span></div><div class="card-body-sm" id="ex-body">';
   allEx.forEach((ex,ei)=>{html+=buildExerciseHTML(ex,ei);});
   html+='</div><div class="add-ex-row" style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary btn-sm" style="white-space:nowrap" onclick="saveAllSets()">💾 Save Session</button><div class="add-set-btn" style="color:var(--accent);margin:0;flex:1;justify-content:center" onclick="openAddExModal()">＋ Add Exercise</div></div></div>';
   sec.innerHTML=html;
@@ -1091,10 +1179,24 @@ async function fetchExerciseDemo(exName){
 async function loadFood(){
   if(foodLoaded) return;
   document.getElementById('food-spinner').style.display='block';
+  
+  try{
+    const yest = new Date(today); yest.setDate(yest.getDate()-1); 
+    const yestRows = await apiFetch('/api/food?date='+fmtDate(yest));
+    const yestKcal = yestRows.reduce((sum,r)=>sum+(parseInt(r.calories)||0), 0);
+    document.getElementById('diet-yest-val').textContent = yestKcal > 0 ? yestKcal.toLocaleString() + ' kcal' : '-- kcal';
+  }catch(e){}
+
   try{
     const rows=await apiFetch('/api/food?date='+todayStr);
     foodState={};
-    rows.forEach(r=>{foodState[r.meal_timing+'|'+r.food_item]=true;});
+    rows.forEach(r=>{
+      const baseItem = FOOD_ITEMS[r.meal_timing]?.find(i=>i.name===r.food_item);
+      let q = 1;
+      if(baseItem && baseItem.kcal>0){ q = Math.round(r.calories / baseItem.kcal); }
+      if(q<1) q=1;
+      foodState[r.meal_timing+'|'+r.food_item]=q;
+    });
   }catch(e){console.error('Food load error',e);}
   document.getElementById('food-spinner').style.display='none';
   foodLoaded=true;
@@ -1111,38 +1213,55 @@ function renderFoodSection(timing,containerId){
   const el=document.getElementById(containerId);
   el.innerHTML=items.map(item=>{
     const key=timing+'|'+item.name;
-    const checked=!!foodState[key];
-    return '<div class="food-item" data-timing="'+timing+'" data-name="'+encodeURIComponent(item.name)+'" data-kcal="'+item.kcal+'" data-pro="'+item.pro+'" data-carb="'+item.carb+'" data-fat="'+item.fat+'" onclick="toggleFood(this)"><div class="food-cb '+(checked?'checked':'')+'">'+(checked?'✓':'')+'</div><div class="food-info"><div class="food-name">'+item.name+'</div><div class="food-desc">'+item.desc+'</div></div><div class="food-macros"><div class="food-kcal">'+item.kcal+'</div><div class="food-pro">'+item.pro+'g P</div></div></div>';
+    const qty=foodState[key]||0;
+    const checked=qty>0;
+    return '<div class="food-item" data-timing="'+timing+'" data-name="'+encodeURIComponent(item.name)+'" data-kcal="'+item.kcal+'" data-pro="'+item.pro+'" data-carb="'+item.carb+'" data-fat="'+item.fat+'" onclick="toggleFood(this)">'+
+    '<div class="food-cb '+(checked?'checked':'')+'">'+(checked?'✓':'')+'</div>'+
+    '<div class="food-info"><div class="food-name">'+item.name+'</div><div class="food-desc">'+item.desc+'</div></div>'+
+    '<div class="food-qty" style="display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()">'+
+      '<button class="qty-btn" onclick="changeQty(this,-1)">-</button><span style="min-width:12px;text-align:center">'+qty+'</span><button class="qty-btn" onclick="changeQty(this,1)">+</button>'+
+    '</div>'+
+    '<div class="food-macros"><div class="food-kcal">'+item.kcal+'</div><div class="food-pro">'+item.pro+'g P</div></div></div>';
   }).join('');
 }
 
 async function toggleFood(el){
   const timing=el.dataset.timing,name=decodeURIComponent(el.dataset.name);
-  const kcal=parseInt(el.dataset.kcal),pro=parseInt(el.dataset.pro),carb=parseInt(el.dataset.carb),fat=parseInt(el.dataset.fat);
   const key=timing+'|'+name;
-  const nowChecked=!foodState[key];
-  foodState[key]=nowChecked;
+  const nowQty = (foodState[key]||0)>0 ? 0 : 1;
+  await saveFoodQty(el, key, nowQty);
+}
+async function changeQty(btn, delta){
+  const el=btn.closest('.food-item');
+  const timing=el.dataset.timing,name=decodeURIComponent(el.dataset.name);
+  const key=timing+'|'+name;
+  let nowQty = (foodState[key]||0) + delta;
+  if(nowQty<0) nowQty=0;
+  await saveFoodQty(el, key, nowQty);
+}
+async function saveFoodQty(el, key, qty){
+  const timing=el.dataset.timing,name=decodeURIComponent(el.dataset.name);
+  const kcal=parseInt(el.dataset.kcal),pro=parseInt(el.dataset.pro),carb=parseInt(el.dataset.carb),fat=parseInt(el.dataset.fat);
+  foodState[key]=qty;
   const cb=el.querySelector('.food-cb');
-  cb.className='food-cb'+(nowChecked?' checked':'');cb.textContent=nowChecked?'✓':'';
+  cb.className='food-cb'+(qty>0?' checked':'');cb.textContent=qty>0?'✓':'';
+  el.querySelector('.food-qty span').textContent=qty;
   updateCalSummary();
-  try{await apiFetch('/api/food','POST',{date:todayStr,meal_timing:timing,food_item:name,calories:kcal,protein:pro,carbs:carb,fats:fat,checked:nowChecked});}
-  catch{
-    foodState[key]=!nowChecked;
-    cb.className='food-cb'+(!nowChecked?' checked':'');cb.textContent=!nowChecked?'✓':'';
-    updateCalSummary();toast('❌ Could not save — check connection');
-  }
+  
+  try{await apiFetch('/api/food','POST',{date:todayStr,meal_timing:timing,food_item:name,calories:kcal*qty,protein:pro*qty,carbs:carb*qty,fats:fat*qty,checked:qty>0});}
+  catch{toast('❌ Could not save');}
 }
 
 async function syncFood(){
-  // Re-save every checked item to make sure nothing was missed
   const order=['breakfast','lunch','dinner','pre','post'];
   let saved=0,failed=0;
   for(const timing of order){
     for(const item of (FOOD_ITEMS[timing]||[])){
       const key=timing+'|'+item.name;
-      if(foodState[key]){
+      const qty=foodState[key]||0;
+      if(qty>0){
         try{
-          await apiFetch('/api/food','POST',{date:todayStr,meal_timing:timing,food_item:item.name,calories:item.kcal,protein:item.pro,carbs:item.carb,fats:item.fat,checked:true});
+          await apiFetch('/api/food','POST',{date:todayStr,meal_timing:timing,food_item:item.name,calories:item.kcal*qty,protein:item.pro*qty,carbs:item.carb*qty,fats:item.fat*qty,checked:true});
           saved++;
         }catch{failed++;}
       }
@@ -1155,14 +1274,14 @@ async function syncFood(){
 function updateCalSummary(){
   let kcal=0,pro=0,carb=0,fat=0;
   const tKcal={breakfast:0,lunch:0,dinner:0,pre:0,post:0};
-  Object.entries(foodState).forEach(([key,checked])=>{
-    if(!checked) return;
+  Object.entries(foodState).forEach(([key,qty])=>{
+    if(!qty) return;
     const sep=key.indexOf('|');
     const timing=key.substring(0,sep),name=key.substring(sep+1);
     const item=FOOD_ITEMS[timing]?.find(f=>f.name===name);
     if(!item) return;
-    kcal+=item.kcal;pro+=item.pro;carb+=item.carb;fat+=item.fat;
-    if(tKcal[timing]!=null) tKcal[timing]+=item.kcal;
+    kcal+=item.kcal*qty;pro+=item.pro*qty;carb+=item.carb*qty;fat+=item.fat*qty;
+    if(tKcal[timing]!=null) tKcal[timing]+=item.kcal*qty;
   });
   document.getElementById('cal-total').textContent=kcal.toLocaleString();
   document.getElementById('cal-pro').textContent=pro+'g';
@@ -1524,6 +1643,61 @@ function goPanel(id,el){
   if(id==='diet') loadFood();
   if(id==='home') loadHome();
   if(id==='routine') loadRoutine();
+  if(id.endsWith('-detail')){
+    const section=id.split('-')[0];
+    switchDetailTab(section,'analysis');
+  }
+}
+
+function switchDetailTab(section, tab){
+  document.getElementById('btn-'+section+'-analysis').classList.toggle('active', tab==='analysis');
+  document.getElementById('btn-'+section+'-records').classList.toggle('active', tab==='records');
+  document.getElementById(section+'-analysis').style.display=tab==='analysis'?'block':'none';
+  document.getElementById(section+'-records').style.display=tab==='records'?'block':'none';
+  
+  if(tab==='analysis') loadDetailAnalysis(section);
+  else loadDetailRecords(section);
+}
+
+async function loadDetailAnalysis(section){
+  try {
+    if(section==='workout') {
+      const data = await apiFetch('/api/analysis_gym');
+      document.getElementById('wd-top-ex').innerHTML = (data.topExercises||[]).map(e=>'<div class="hist-row"><div>'+e.exercise_name+'</div><div class="hist-val">'+e.sets_done+' sets</div></div>').join('');
+    } else if(section==='diet') {
+      const data = await apiFetch('/api/analysis_food');
+      document.getElementById('dd-top-foods').innerHTML = (data.topFoods||[]).map(f=>'<div class="hist-row"><div>'+f.food_item+' ('+f.meal_timing+')</div><div class="hist-val">'+f.times_logged+' logs</div></div>').join('');
+    } else if(section==='routine') {
+      const data = await apiFetch('/api/analysis_routine');
+      document.getElementById('rd-missed').innerHTML = Object.entries(data.missed||{}).map(([k,v])=>'<div class="hist-row"><div>'+k+'</div><div class="hist-val">'+v+' misses</div></div>').join('');
+    }
+  } catch(e) {
+    document.getElementById(section==='workout'?'wd-top-ex':section==='diet'?'dd-top-foods':'rd-missed').innerHTML = '<div class="err">Failed to load insights</div>';
+  }
+}
+
+function loadDetailRecords(section){
+  const el = document.getElementById(section==='workout'?'wd-records-list':section==='diet'?'dd-records-list':'rd-records-list');
+  el.innerHTML = '<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:24px"><div style="font-size:24px;margin-bottom:8px">📅</div><div style="margin-bottom:8px">Select a date to view or edit past records.</div><input type="date" class="inp" value="'+todayStr+'" max="'+fmtDate(new Date())+'" onchange="changeGlobalDate(this.value)" style="margin:12px auto;width:auto;display:block;background:var(--surface)"><br><button class="btn btn-primary btn-sm" onclick="goPanel(\\''+section+'\\')">Go to '+section+'</button></div></div>';
+}
+
+function changeGlobalDate(ds){
+  if(!ds) return;
+  todayStr = ds;
+  const d = new Date(ds+'T12:00:00');
+  today = d;
+  curDay = DAYS[d.getDay()];
+  setType = getSetType();
+  selectedWorkoutDay = null;
+  const sel = document.getElementById('workout-plan-sel');
+  if(sel) sel.value = 'AUTO';
+  toast('📅 Date changed to '+ds);
+  
+  foodLoaded = false;
+  routineData = null;
+  loadToday();
+  if(document.getElementById('panel-diet').classList.contains('active') || document.getElementById('panel-diet-detail').classList.contains('active')) loadFood();
+  if(document.getElementById('panel-routine').classList.contains('active') || document.getElementById('panel-routine-detail').classList.contains('active')) loadRoutine();
 }
 
 /* ═══════════════════════════════════════════

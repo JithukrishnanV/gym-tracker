@@ -40,7 +40,7 @@ body{max-width:480px;margin:0 auto;min-height:100%;padding-bottom:120px;overflow
 .html-chart{display:flex;align-items:flex-end;justify-content:space-between;height:120px;padding-top:10px}
 .bar-wrap{display:flex;flex-direction:column;align-items:center;width:12%;height:100%;justify-content:flex-end}
 .bar-val{font-size:10px;color:var(--text);margin-bottom:4px;opacity:0.9;font-weight:600;text-align:center}
-.bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:height 0.3s}
+.bar-fill{position:absolute;bottom:0;left:0;width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:height 0.3s}
 .bar-lbl{font-size:9px;color:var(--muted);margin-top:4px;text-transform:uppercase;text-align:center}
 
 /* ── CARDS ── */
@@ -62,7 +62,8 @@ input[type=number]{-moz-appearance:textfield}
 /* ── BUTTONS ── */
 .btn{padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;transition:opacity .15s}
 .btn:active{opacity:.7}
-.btn-primary{background:var(--accent);color:#000}
+.pill-toggle.on{background:var(--accent);color:#000}
+.target-card{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text);margin-bottom:8px}
 .btn-ghost{background:var(--card2);color:var(--text);border:1px solid var(--border)}
 .btn-sm{padding:7px 13px;font-size:12px;border-radius:7px}
 .btn-danger{background:rgba(240,96,96,.15);color:var(--danger);border:1px solid rgba(240,96,96,.3)}
@@ -191,7 +192,7 @@ input[type=number]{-moz-appearance:textfield}
 .pbar-fill.over{background:var(--danger)}
 .cal-footer{display:flex;justify-content:space-between;margin-top:5px}
 .cal-footer-txt{font-size:10px;color:var(--muted)}
-.export-row{display:flex;gap:8px;margin-bottom:14px}
+.export-row{display:flex;gap:8px;margin-bottom:14px;position:sticky;bottom:70px;background:var(--bg);padding:10px 0;z-index:100;border-top:1px solid var(--border)}
 .export-row .btn{flex:1;font-size:12px;padding:9px 6px}
 
 /* ── VIDEO MODAL ── */
@@ -481,8 +482,15 @@ textarea.inp{resize:none;min-height:72px}
 ══════════════════════════════════════════ -->
 <div class="panel" id="panel-home">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-    <div class="home-greeting" id="home-greeting" style="margin-bottom:0">Good Morning, Jithu</div>
+    <div class="home-greeting" id="home-greeting" style="margin-bottom:0">Welcome back, Jithu</div>
     <div onclick="openSettings()" style="font-size:22px;cursor:pointer;opacity:0.8">⚙️</div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;border:1px solid var(--accent)">
+    <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;padding:12px">
+      <div style="font-size:24px;font-weight:bold;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--accent)" id="timer-display">00:00</div>
+      <button class="btn btn-primary btn-sm" id="timer-btn" onclick="toggleTimer()">⏱️ Start Timer</button>
+    </div>
   </div>
   
   <div class="stats2" id="home-stats">
@@ -714,29 +722,38 @@ textarea.inp{resize:none;min-height:72px}
    WORKOUT PLAN
 ═══════════════════════════════════════════ */
 const PLAN = {
-  MON:{name:'Chest + Triceps',focus:'Push Focus',color:'#c8f060',
-    A:[{n:'Barbell Bench Press',s:4,r:'8'},{n:'Incline DB Press',s:3,r:'10'},{n:'Chest Press Machine',s:3,r:'12'},{n:'Tricep Rope Pushdown (Cable)',s:3,r:'12'},{n:'Overhead Tricep Ext. (Cable)',s:3,r:'12'},{n:'Wrist Curls (Barbell)',s:3,r:'15'}],
-    B:[{n:'DB Flat Bench Press',s:4,r:'10'},{n:'Cable Chest Fly (Low-to-High)',s:3,r:'12'},{n:'Pec Deck / Butterfly Machine',s:3,r:'12'},{n:'Tricep Pushdown (Straight Bar)',s:3,r:'12'},{n:'Skull Crushers (EZ Bar)',s:3,r:'10'},{n:'Reverse Wrist Curls',s:3,r:'15'}]},
-  TUE:{name:'Legs + Abs',focus:'Quad & Hamstring Focus',color:'#60d4f0',
-    A:[{n:'Barbell Back Squat',s:4,r:'8'},{n:'Seated Leg Press',s:3,r:'12'},{n:'Lying Leg Curl',s:3,r:'12'},{n:'Seated Calf Raise',s:4,r:'15'},{n:'Plank',s:3,r:'45s'},{n:'Hanging Leg Raises',s:3,r:'12'}],
-    B:[{n:'Goblet Squat (DB)',s:4,r:'10'},{n:'Standing Leg Press',s:3,r:'12'},{n:'Seated Leg Curl',s:3,r:'12'},{n:'Standing Calf Raise',s:4,r:'15'},{n:'Ab Crunch Machine',s:3,r:'15'},{n:'Russian Twists',s:3,r:'20'}]},
-  WED:{name:'Legs + Abs',focus:'Glute, Hamstring & Core',color:'#f0a060',
-    A:[{n:'Romanian Deadlift (RDL)',s:4,r:'10'},{n:'Walking Lunges (DB)',s:3,r:'12e'},{n:'Lying Leg Curl',s:3,r:'12'},{n:'Seated Calf Raise',s:4,r:'15'},{n:'Cable Woodchop',s:3,r:'15e'},{n:'Decline Sit-Ups',s:3,r:'15'}],
-    B:[{n:'Sumo Squat (DB)',s:4,r:'10'},{n:'Step-Ups (DB)',s:3,r:'12e'},{n:'Seated Leg Curl',s:3,r:'12'},{n:'Standing Calf Raise',s:4,r:'15'},{n:'Hollow Body Hold',s:3,r:'30s'},{n:'Bicycle Crunches',s:3,r:'20'}]},
-  THU:{name:'Back + Biceps',focus:'Pull Focus + Forearms',color:'#c084fc',
-    A:[{n:'Pull-Ups / Lat Pulldown',s:4,r:'8'},{n:'Seated Cable Row',s:3,r:'10'},{n:'Single-Arm DB Row',s:3,r:'10e'},{n:'Barbell Bicep Curl',s:3,r:'12'},{n:'Cable Bicep Curl',s:3,r:'12'},{n:"Farmer's Carry",s:3,r:'30m'}],
-    B:[{n:'Wide-Grip Lat Pulldown',s:4,r:'10'},{n:'Face Pulls (Cable)',s:3,r:'15'},{n:'T-Bar / Chest-Supported Row',s:3,r:'10'},{n:'Concentrated DB Curl',s:3,r:'12'},{n:'Hammer Curls',s:3,r:'12'},{n:'Dead Hangs',s:3,r:'30s'}]}
+  MON:{name:'Chest + Triceps',focus:'Upper/Mid/Lower Split',color:'#c8f060',
+    A:[{n:'Incline Barbell Press',s:4,r:'10'}, {n:'Incline DB Press',s:3,r:'10'}, {n:'Incline Fly (DB)',s:3,r:'12'}, {n:'Tricep Pushdown (Straight Bar)',s:3,r:'12'}, {n:'Overhead Tricep Ext. (Cable)',s:3,r:'12'}],
+    B:[{n:'Barbell Bench Press',s:4,r:'8'}, {n:'Seated Chest Fly Machine',s:3,r:'12'}, {n:'Bench Fly',s:3,r:'12'}, {n:'Tricep Rope Pushdown (Cable)',s:3,r:'12'}, {n:'Skull Crushers (EZ Bar)',s:3,r:'10'}],
+    C:[{n:'Decline DB Press',s:4,r:'10'}, {n:'Cable Chest Fly (Low-to-High)',s:3,r:'12'}, {n:'Chest Press Machine',s:3,r:'12'}, {n:'Close-Grip Bench Press',s:3,r:'10'}, {n:'Tricep Dips',s:3,r:'10'}]
+  },
+  TUE:{name:'Legs + Glutes',focus:'Quad & Glute Focus',color:'#60d4f0',
+    A:[{n:'Barbell Back Squat',s:4,r:'8'}, {n:'Leg Press Machine',s:3,r:'12'}, {n:'Lying Leg Curl',s:3,r:'12'}, {n:'Standing Glute Kickback',s:3,r:'12'}, {n:'Seated Calf Raise',s:4,r:'15'}],
+    B:[{n:'Barbell Back Squat',s:4,r:'8'}, {n:'Hack Squat Machine',s:3,r:'12'}, {n:'Seated Leg Curl',s:3,r:'12'}, {n:'Barbell Glute Bridge',s:3,r:'12'}, {n:'Standing Calf Raise',s:4,r:'15'}],
+    C:[{n:'Barbell Back Squat',s:4,r:'8'}, {n:'Bulgarian Split Squat',s:3,r:'10'}, {n:'Standing Single Leg Curl',s:3,r:'12'}, {n:'Hip Thrust Machine',s:3,r:'12'}, {n:'Seated Hip Abductor',s:3,r:'15'}]
+  },
+  WED:{name:'Back + Biceps',focus:'Pull Focus + Forearms',color:'#c084fc',
+    A:[{n:'Pull-Ups / Lat Pulldown',s:4,r:'8'}, {n:'Bent-Over Barbell Row',s:3,r:'10'}, {n:'Seated Cable Row (Wide Grip)',s:3,r:'10'}, {n:'Barbell Bicep Curl',s:3,r:'12'}, {n:'Wrist Curls (Barbell)',s:3,r:'15'}],
+    B:[{n:'Wide-Grip Lat Pulldown',s:4,r:'10'}, {n:'Bent-Over DB Row',s:3,r:'10'}, {n:'Seated Cable Row (Close Grip)',s:3,r:'10'}, {n:'Hammer Curls',s:3,r:'12'}, {n:'Reverse Wrist Curls',s:3,r:'15'}],
+    C:[{n:'Lat Pulldown (Close Grip)',s:4,r:'10'}, {n:'Machine Back Pull',s:3,r:'12'}, {n:'Rear Delt Fly (Lying)',s:3,r:'12'}, {n:'Concentrated DB Curl',s:3,r:'12'}, {n:"Farmer's Carry",s:3,r:'30s'}]
+  },
+  THU:{name:'Shoulders + Abs',focus:'Shoulders & Core',color:'#f0a060',
+    A:[{n:'Overhead Press (Barbell)',s:4,r:'8'}, {n:'Lateral Raises (DB)',s:3,r:'15'}, {n:'Front Raises (DB)',s:3,r:'12'}, {n:'Plank',s:3,r:'60s'}, {n:'Ab Crunch Machine',s:3,r:'15'}],
+    B:[{n:'DB Shoulder Press',s:4,r:'10'}, {n:'Cable Lateral Raise',s:3,r:'12'}, {n:'Upright Row',s:3,r:'10'}, {n:'Hanging Leg Raises',s:3,r:'12'}, {n:'Cable Crunch',s:3,r:'15'}],
+    C:[{n:'Arnold Press',s:4,r:'10'}, {n:'Shoulder Machine Workout',s:3,r:'12'}, {n:'Reverse Fly (DB)',s:3,r:'12'}, {n:'Bicycle Crunches',s:3,r:'20'}, {n:'Decline Sit-Ups',s:3,r:'15'}]
+  }
 };
 
 const ALL_EXERCISES = {
-  'Chest':['Barbell Bench Press','DB Flat Bench Press','Incline DB Press','Incline Barbell Press','Decline DB Press','Cable Chest Fly (Low-to-High)','Pec Deck / Butterfly Machine','Chest Press Machine','Push-Ups','Weighted Dips'],
-  'Back':['Pull-Ups / Lat Pulldown','Wide-Grip Lat Pulldown','Seated Cable Row','Single-Arm DB Row','T-Bar / Chest-Supported Row','Face Pulls (Cable)','Romanian Deadlift (RDL)','Deadlift','Good Mornings','Hyperextensions'],
-  'Legs':['Barbell Back Squat','Goblet Squat (DB)','Sumo Squat (DB)','Standing Leg Press','Seated Leg Press','Leg Extension','Lying Leg Curl','Seated Leg Curl','Standing Calf Raise','Seated Calf Raise','Walking Lunges (DB)','Step-Ups (DB)','Bulgarian Split Squat','Hip Thrust'],
-  'Shoulders':['Overhead Press (Barbell)','DB Shoulder Press','Arnold Press','Lateral Raises (DB)','Front Raises (DB)','Reverse Fly (DB)','Cable Lateral Raise','Upright Row'],
-  'Biceps':['Barbell Bicep Curl','Cable Bicep Curl','Concentrated DB Curl','Hammer Curls','Preacher Curl','EZ Bar Curl','Incline DB Curl'],
-  'Triceps':['Tricep Rope Pushdown (Cable)','Overhead Tricep Ext. (Cable)','Tricep Pushdown (Straight Bar)','Skull Crushers (EZ Bar)','Close-Grip Bench Press','Tricep Dips','Kickbacks (DB)'],
-  'Core':['Plank','Side Plank','Hanging Leg Raises','Ab Crunch Machine','Cable Crunch','Russian Twists','Bicycle Crunches','Decline Sit-Ups','Hollow Body Hold','Dead Bug','Cable Woodchop','Ab Wheel Rollout'],
-  'Forearms':['Wrist Curls (Barbell)','Reverse Wrist Curls',"Farmer's Carry",'Dead Hangs','Plate Pinches'],
+  'Chest':['Barbell Bench Press','DB Flat Bench Press','Incline DB Press','Incline Barbell Press','Decline DB Press','Cable Chest Fly (Low-to-High)','Pec Deck / Butterfly Machine','Seated Chest Fly Machine','Chest Press Machine','Incline Press Machine','Bench Fly','Incline Fly (DB)'],
+  'Back':['Pull-Ups / Lat Pulldown','Wide-Grip Lat Pulldown','Lat Pulldown (Close Grip)','Seated Cable Row (Wide Grip)','Seated Cable Row (Close Grip)','Bent-Over Barbell Row','Bent-Over DB Row','Machine Back Pull','Seated Pull Machine','Lat Pullback Machine','Cable Pull-Through','Standing Cable Pull','Rear Delt Fly (Lying)'],
+  'Legs':['Barbell Back Squat','Squat Machine','Hack Squat Machine','Leg Press Machine','Standing Leg Press','Sumo Squat','Bulgarian Split Squat','Leg Extension','Lying Leg Curl','Seated Leg Curl','Standing Single Leg Curl','Standing Calf Raise','Seated Calf Raise','Seated Hip Abductor'],
+  'Glutes':['Standing Glute Kickback','Barbell Glute Bridge','Hip Thrust','Hip Thrust Machine'],
+  'Shoulders':['Overhead Press (Barbell)','DB Shoulder Press','Arnold Press','Shoulder Machine Workout','Lateral Raises (DB)','Front Raises (DB)','Reverse Fly (DB)','Cable Lateral Raise','Upright Row'],
+  'Biceps':['Barbell Bicep Curl','Cable Bicep Curl','Concentrated DB Curl','Hammer Curls','Biceps Machine Workout'],
+  'Triceps':['Tricep Rope Pushdown (Cable)','Overhead Tricep Ext. (Cable)','Tricep Pushdown (Straight Bar)','Skull Crushers (EZ Bar)','Close-Grip Bench Press','Tricep Dips'],
+  'Core':['Plank','Hanging Leg Raises','Ab Crunch Machine','Cable Crunch','Bicycle Crunches','Decline Sit-Ups'],
+  'Forearms':['Wrist Curls (Barbell)','Reverse Wrist Curls',"Farmer's Carry"],
 };
 
 /* ═══════════════════════════════════════════
@@ -755,6 +772,8 @@ const FOOD_ITEMS = {
     {name:'Carrot + Beans + Cauliflower',desc:'Veggie mix',kcal:95,pro:4,carb:18,fat:1},
     {name:'Rice',desc:'1 cup cooked (~150g)',kcal:200,pro:4,carb:44,fat:0},
     {name:'Chapati',desc:'1 piece (whole wheat)',kcal:115,pro:3,carb:20,fat:3},
+    {name:'Biriyani',desc:'1 serving',kcal:450,pro:20,carb:55,fat:15},
+    {name:'Bread + Eggs + Cheese Sandwich',desc:'2 slices bread, 2 eggs, 1 slice cheese',kcal:350,pro:22,carb:28,fat:16},
   ],
   dinner:[
     {name:'Chicken Curry',desc:'~200g chicken breast',kcal:320,pro:38,carb:10,fat:12},
@@ -814,7 +833,7 @@ let selectedWorkoutDay = null;
    UTILS
 ═══════════════════════════════════════════ */
 function fmtDate(d){return d.toISOString().split('T')[0];}
-function getSetType(){const d=new Date(today);const j=new Date(d.getFullYear(),0,1);const wk=Math.ceil(((d-j)/864e5+j.getDay()+1)/7);return wk%2===1?'A':'B';}
+function getSetType(){const d=new Date(today);const j=new Date(d.getFullYear(),0,1);const wk=Math.ceil(((d-j)/864e5+d.getDay()+1)/7);const cycle = wk % 3; return cycle===1 ? 'A' : (cycle===2 ? 'B' : 'C');}
 function toast(msg,ms=2200){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),ms);}
 function isGym(d){return['MON','TUE','WED','THU'].includes(d);}
 function isSoccer(d){return['FRI','SAT'].includes(d);}
@@ -1382,8 +1401,9 @@ function renderHTMLChart(containerId, labels, data, color, targetVal) {
       html += '<div class="bar-wrap" style="position:relative">' +
               targetLine +
               '<div class="bar-val">'+topHtml+'</div>' +
+              '<div style="flex-grow:1;width:100%;position:relative">' +
               '<div class="bar-fill" style="height:'+pct+'%;background:'+color+';z-index:1"></div>' +
-              '<div class="bar-lbl">'+labels[i]+'</div>' +
+              '</div><div class="bar-lbl">'+labels[i]+'</div>' +
               '</div>';
     }
     container.innerHTML = html;
@@ -1414,10 +1434,7 @@ function renderHome() {
   const {weights,activitiesByDate,foodByDate,sleepByDate,streak}=analysisData;
   const todayDate = new Date();
   
-  // Greeting
-  const hr = todayDate.getHours();
-  const greeting = hr < 12 ? 'Good Morning' : hr < 18 ? 'Good Afternoon' : 'Good Evening';
-  document.getElementById('home-greeting').textContent = `${greeting}, Jithu`;
+  document.getElementById('home-greeting').textContent = `Welcome back, Jithu`;
 
   // Streak badge in header
   if(streak>0){
@@ -1457,8 +1474,21 @@ function renderHome() {
     labels7.push((d.getMonth()+1)+'/'+d.getDate());
     
     // workout
-    const hasGym = (activitiesByDate[ds]||[]).some(a=>a.type==='gym') ? 1 : 0;
-    workoutData.push(hasGym);
+    const acts = activitiesByDate[ds]||[];
+    const hasGym = acts.some(a=>a.type==='gym');
+    const hasSoccer = acts.some(a=>a.type==='soccer');
+    const hasRun = acts.some(a=>a.type==='run');
+    let emoji = '-';
+    if(acts.length) {
+      if(hasGym && hasSoccer) emoji = '🏋️⚽';
+      else if(hasGym && hasRun) emoji = '🏋️🏃';
+      else if(hasGym) emoji = '🏋️';
+      else if(hasSoccer) emoji = '⚽';
+      else if(hasRun) emoji = '🏃';
+      else emoji = '🔥';
+    }
+    const val = acts.length > 0 ? acts.reduce((s,a)=>s+(a.duration||30),0) : 0;
+    workoutData.push({val: val, html: emoji});
     
     // diet
     dietData.push(foodByDate[ds]?.calories||0);
@@ -1469,9 +1499,34 @@ function renderHome() {
   }
 
   // Draw mini charts
-  renderHTMLChart('home-workout-chart', labels7, workoutData, 'var(--accent)', 'No Workouts');
-  renderHTMLChart('home-diet-chart', labels7, dietData, 'var(--accent3)', 'No Diet Logs');
-  renderHTMLChart('home-routine-chart', labels7, routineChartData, 'var(--accent2)', 'No Routine Logs');
+  renderHTMLChart('home-workout-chart', labels7, workoutData, 'var(--accent)');
+  renderHTMLChart('home-diet-chart', labels7, dietData, 'var(--accent3)', appSettings.calTarget);
+  renderHTMLChart('home-routine-chart', labels7, routineChartData, 'var(--accent2)', 100);
+  
+  // Calculate Targets
+  let targetsHtml = '';
+  const yestDate = new Date(actualToday);
+  yestDate.setDate(yestDate.getDate() - 1);
+  const yStr = fmtDate(yestDate);
+  const ySleep = sleepByDate[yStr];
+  if (ySleep && ySleep.hours < appSettings.sleepTarget) {
+    targetsHtml += '<div class="target-card">😴 <b>Sleep More:</b> You only slept '+ySleep.hours+'h yesterday. Aim for '+appSettings.sleepTarget+'h tonight.</div>';
+  }
+  const yActs = activitiesByDate[yStr];
+  if (!yActs || yActs.length === 0) {
+    targetsHtml += '<div class="target-card">🏋️ <b>Get Moving:</b> You rested yesterday. Make sure to get a workout in today!</div>';
+  } else {
+    targetsHtml += '<div class="target-card">🔥 <b>Keep it up:</b> You worked out yesterday. Keep the momentum going!</div>';
+  }
+  const yFood = foodByDate[yStr];
+  if (yFood && yFood.calories < appSettings.calTarget * 0.8) {
+    targetsHtml += '<div class="target-card">🍽️ <b>Eat More:</b> You missed your calorie target by a lot yesterday. Fuel up today.</div>';
+  } else if (yFood && yFood.calories > appSettings.calTarget * 1.2) {
+    targetsHtml += '<div class="target-card">🍽️ <b>Stay on Track:</b> You went over your calories yesterday. Watch your intake today.</div>';
+  }
+  if(!targetsHtml) targetsHtml = '<div class="target-card">✨ <b>Perfect:</b> You hit all your marks yesterday! Have a great day.</div>';
+  
+  document.getElementById('home-targets').innerHTML = targetsHtml;
   
   renderCalendar();
 }
@@ -1863,6 +1918,44 @@ function closeSettings(e) {
   if(!e || e.target.id === 'settings-modal' || e.target.innerHTML === '×') {
     document.getElementById('settings-modal').classList.remove('open');
   }
+}
+
+let timerInt=null, timerStart=null;
+function toggleTimer(){
+  const btn = document.getElementById('timer-btn');
+  if(timerInt) {
+    clearInterval(timerInt);
+    timerInt=null;
+    localStorage.removeItem('trackr_timer');
+    timerStart=null;
+    btn.innerHTML='⏱️ Start Timer';
+  } else {
+    timerStart = Date.now();
+    localStorage.setItem('trackr_timer', timerStart);
+    timerInt = setInterval(updateTimer, 1000);
+    btn.innerHTML='⏹️ Stop Timer';
+    updateTimer();
+  }
+}
+function updateTimer(){
+  if(!timerStart) return;
+  const sec = Math.floor((Date.now() - timerStart)/1000);
+  const m=Math.floor(sec/60).toString().padStart(2,'0');
+  const s=(sec%60).toString().padStart(2,'0');
+  const d = document.getElementById('timer-display');
+  if(d) d.textContent=m+':'+s;
+}
+
+// Check on load
+const savedTimer = localStorage.getItem('trackr_timer');
+if(savedTimer) {
+  timerStart = parseInt(savedTimer);
+  timerInt = setInterval(updateTimer, 1000);
+  setTimeout(() => {
+    const btn = document.getElementById('timer-btn');
+    if(btn) btn.innerHTML='⏹️ Stop Timer';
+    updateTimer();
+  }, 100);
 }
 
 </script>

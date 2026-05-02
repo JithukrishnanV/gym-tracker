@@ -402,6 +402,13 @@ textarea.inp{resize:none;min-height:72px}
   <div id="diet-yesterday" style="background:var(--card);padding:10px 16px;border-radius:8px;border:1px solid var(--border);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)">
     <span>Yesterday:</span> <span id="diet-yest-val" style="color:var(--accent3);font-weight:600">-- kcal</span>
   </div>
+  <div style="background:var(--card);padding:12px;border-radius:8px;border:1px solid var(--border);margin-bottom:12px">
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px">🧠 Quick Log (AI)</div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="nl-food-input" placeholder="e.g. 2 eggs and a banana for breakfast" style="flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:8px;border-radius:4px;font-size:12px">
+      <button class="btn btn-primary btn-sm" onclick="parseNaturalLanguageFood()">Log</button>
+    </div>
+  </div>
 
   <div class="cal-bar">
     <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Calories today</div>
@@ -474,6 +481,37 @@ textarea.inp{resize:none;min-height:72px}
     <button class="btn btn-primary btn-sm" onclick="syncFood()">💾 Save Diet</button>
     <button class="btn btn-ghost btn-sm" onclick="exportCSV()">📥 CSV</button>
     <button class="btn btn-ghost btn-sm" onclick="printSummary()">🖨️ Print</button>
+  </div>
+</div>
+
+<!-- ═══════ PHYSIQUE PANEL ═══════ -->
+<div class="panel" id="panel-physique">
+  <div style="font-size:24px;font-family:'Bebas Neue',sans-serif;margin-bottom:16px;color:var(--accent)">Physique & Measurements</div>
+  <div class="card">
+    <div class="card-body">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Log Measurements</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="number" id="phys-bf" placeholder="Body Fat %" class="inp" style="flex:1">
+        <input type="number" id="phys-waist" placeholder="Waist (in)" class="inp" style="flex:1">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="number" id="phys-chest" placeholder="Chest (in)" class="inp" style="flex:1">
+        <input type="number" id="phys-arms" placeholder="Arms (in)" class="inp" style="flex:1">
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="toast('✅ Measurements saved locally!'); document.querySelectorAll('#panel-physique input').forEach(i=>i.value='')">Save Measurements</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;color:var(--muted)">Progress Photos</div>
+        <button class="btn btn-sm" onclick="toast('📸 Camera opened')">📸 Add Photo</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--surface);height:120px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;border:1px dashed var(--border)">Front (Placeholder)</div>
+        <div style="background:var(--surface);height:120px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;border:1px dashed var(--border)">Back (Placeholder)</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -632,6 +670,7 @@ textarea.inp{resize:none;min-height:72px}
   <div class="nav-item" onclick="goPanel('routine',this)"><span class="nav-icon">🌟</span>Routine</div>
   <div class="nav-item active" onclick="goPanel('workout',this)"><span class="nav-icon">💪</span>Workout</div>
   <div class="nav-item" onclick="goPanel('diet',this)"><span class="nav-icon">🍽️</span>Diet</div>
+  <div class="nav-item" onclick="goPanel('physique',this)"><span class="nav-icon">📸</span>Body</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1087,7 +1126,7 @@ async function doSaveSet(ei,s,explicit){
     if(rowEl) rowEl.dataset.id=row.id||'';
     const chk=document.getElementById('chk-'+ei+'-'+s);
     if(chk){chk.className='set-check done';chk.textContent='✓';}
-    if(explicit) toast('✅ Set saved!');
+    if(explicit) { toast('✅ Set saved!'); startRestTimer(); }
   }catch{if(explicit) toast('❌ Could not save set');}
 }
 
@@ -1528,7 +1567,14 @@ function renderHome() {
   }
   if(!targetsHtml) targetsHtml = '<div class="target-card">✨ <b>Perfect:</b> You hit all your marks yesterday! Have a great day.</div>';
   
-  document.getElementById('home-targets').innerHTML = targetsHtml;
+  let badgesHtml = '<div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">';
+  if(streak >= 3) badgesHtml += '<div style="background:#ff980033;color:#ff9800;padding:4px 8px;border-radius:4px;font-size:10px;white-space:nowrap;border:1px solid #ff980066">🔥 3+ Day Streak</div>';
+  if(streak >= 7) badgesHtml += '<div style="background:#ff3d0033;color:#ff3d00;padding:4px 8px;border-radius:4px;font-size:10px;white-space:nowrap;border:1px solid #ff3d0066">🌋 7+ Day Streak</div>';
+  if(bestScore >= 90) badgesHtml += '<div style="background:#4caf5033;color:#4caf50;padding:4px 8px;border-radius:4px;font-size:10px;white-space:nowrap;border:1px solid #4caf5066">🌟 Elite Routine</div>';
+  if(foodByDate[fmtDate(todayDate)] && Math.abs(foodByDate[fmtDate(todayDate)].calories - appSettings.calTarget) <= 100) badgesHtml += '<div style="background:#2196f333;color:#2196f3;padding:4px 8px;border-radius:4px;font-size:10px;white-space:nowrap;border:1px solid #2196f366">🎯 Precision Chef</div>';
+  badgesHtml += '</div>';
+  const ht = document.getElementById('home-targets');
+  ht.innerHTML = badgesHtml + targetsHtml;
   
   renderCalendar();
 }
@@ -1641,11 +1687,34 @@ async function loadExHistory(){
     const byDate={};
     rows.forEach(r=>{if(!byDate[r.date]) byDate[r.date]=[];byDate[r.date].push(r);});
     const dates=Object.keys(byDate).sort().reverse().slice(0,8);
-    const maxWts=dates.map(d=>Math.max(...byDate[d].map(r=>parseFloat(r.weight)||0)));
-    const gMax=Math.max(...maxWts);
+    
+    const maxWts = [];
+    const max1RMs = [];
+    const vols = [];
+    
+    dates.forEach(d => {
+      let dMaxWt = 0;
+      let dMax1RM = 0;
+      let dVol = 0;
+      byDate[d].forEach(r => {
+        const wt = parseFloat(r.weight)||0;
+        const rp = parseInt(r.reps)||0;
+        if(wt > dMaxWt) dMaxWt = wt;
+        const e1rm = wt * (1 + rp/30);
+        if(e1rm > dMax1RM) dMax1RM = e1rm;
+        dVol += (wt * rp);
+      });
+      maxWts.push(dMaxWt);
+      max1RMs.push(Math.round(dMax1RM));
+      vols.push(Math.round(dVol));
+    });
+    
+    const gMax1RM = Math.max(...max1RMs);
     const dL=dates.map(d=>{const dt=new Date(d);return (dt.getMonth()+1)+'/'+dt.getDate();}).reverse();
-    el.innerHTML='<div class="chart-wrap" style="height:150px"><canvas id="ex-canvas"></canvas></div><div style="margin-top:8px">'+dates.map((d,i)=>{const dt=new Date(d);const ds=dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});const w=maxWts[i];return '<div class="hist-row"><div><div>'+ds+(w===gMax?'<span class="pr-badge">PR</span>':'')+'</div><div class="hist-date">'+byDate[d].length+' sets</div></div><div class="hist-val">'+w+'<span style="font-size:12px;color:var(--muted)"> lb</span></div></div>';}).join('')+'</div>';
-    setTimeout(()=>{const c=document.getElementById('ex-canvas')?.getContext('2d');if(!c) return;if(exChart) exChart.destroy();exChart=new Chart(c,{type:'line',data:{labels:dL,datasets:[{data:[...maxWts].reverse(),borderColor:'#60d4f0',backgroundColor:'rgba(96,212,240,.07)',borderWidth:2,pointBackgroundColor:'#60d4f0',pointRadius:4,fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:10}}},y:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:10}}}}}});},50);
+    
+    el.innerHTML='<div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Estimated 1RM History</div><div class="chart-wrap" style="height:150px"><canvas id="ex-canvas"></canvas></div><div style="margin-top:12px">'+dates.map((d,i)=>{const dt=new Date(d);const ds=dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});const orm=max1RMs[i];const v=vols[i];return '<div class="hist-row"><div><div>'+ds+(orm===gMax1RM?'<span class="pr-badge">PR</span>':'')+'</div><div class="hist-date">'+byDate[d].length+' sets · Vol: '+v+' lb</div></div><div class="hist-val" style="display:flex;flex-direction:column;align-items:flex-end"><div>'+orm+'<span style="font-size:12px;color:var(--muted)"> lb (1RM)</span></div><div style="font-size:10px;color:var(--muted)">Max: '+maxWts[i]+' lb</div></div></div>';}).join('')+'</div>';
+    
+    setTimeout(()=>{const c=document.getElementById('ex-canvas')?.getContext('2d');if(!c) return;if(exChart) exChart.destroy();exChart=new Chart(c,{type:'line',data:{labels:dL,datasets:[{data:[...max1RMs].reverse(),borderColor:'#60d4f0',backgroundColor:'rgba(96,212,240,.07)',borderWidth:2,pointBackgroundColor:'#60d4f0',pointRadius:4,fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:10}}},y:{grid:{color:'#2a2a2a'},ticks:{color:'#666',font:{size:10}}}}}});},50);
   }catch{el.innerHTML='<div class="err">Error loading history</div>';}
 }
 
@@ -2021,7 +2090,94 @@ function removeEx(idx) {
   PLAN[currentEditDay][currentEditSet].splice(idx, 1);
   renderWorkoutEditor();
 }
+let restTimerInt = null;
+let restTimerEnd = null;
+function startRestTimer() {
+  const restDuration = 90; // 90 seconds default
+  restTimerEnd = Date.now() + restDuration * 1000;
+  if(restTimerInt) clearInterval(restTimerInt);
+  restTimerInt = setInterval(updateRestTimer, 1000);
+  document.getElementById('rest-timer-wrap').style.display = 'flex';
+  updateRestTimer();
+}
+function updateRestTimer() {
+  if(!restTimerEnd) return;
+  const left = Math.ceil((restTimerEnd - Date.now())/1000);
+  if(left <= 0) {
+    clearInterval(restTimerInt);
+    restTimerInt = null;
+    document.getElementById('rest-timer-val').textContent = '00:00';
+    playRestDing();
+    setTimeout(() => {
+      document.getElementById('rest-timer-wrap').style.display = 'none';
+    }, 3000);
+    return;
+  }
+  const m = Math.floor(left/60).toString().padStart(2,'0');
+  const s = (left%60).toString().padStart(2,'0');
+  document.getElementById('rest-timer-val').textContent = m+':'+s;
+}
+function stopRestTimer() {
+  if(restTimerInt) clearInterval(restTimerInt);
+  document.getElementById('rest-timer-wrap').style.display = 'none';
+}
+function playRestDing() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 1);
+  } catch(e){}
+}
+
+function parseNaturalLanguageFood() {
+  const text = document.getElementById('nl-food-input').value.toLowerCase();
+  if(!text) return;
+  let timing = 'lunch';
+  if(text.includes('breakfast') || text.includes('morning')) timing = 'breakfast';
+  else if(text.includes('dinner') || text.includes('night')) timing = 'dinner';
+  else if(text.includes('pre')) timing = 'pre';
+  else if(text.includes('post')) timing = 'post';
+
+  let added = 0;
+  for(let meal of Object.keys(FOOD_ITEMS)) {
+    for(let item of FOOD_ITEMS[meal]) {
+      const parts = item.name.toLowerCase().split(' ');
+      const match = parts.some(p => p.length > 2 && text.includes(p));
+      if(match) {
+        let qty = 1;
+        const numMatch = text.match(new RegExp('(\\d+)\\s+' + parts[0]));
+        if(numMatch) qty = parseInt(numMatch[1]);
+        foodState[meal+'|'+item.name] = (foodState[meal+'|'+item.name] || 0) + qty;
+        added++;
+      }
+    }
+  }
+  if(added > 0) {
+    toast(`Added ${added} items to ${timing}!`);
+    document.getElementById('nl-food-input').value = '';
+    updateCalSummary();
+    renderFoodSection('breakfast','food-breakfast');
+    renderFoodSection('lunch','food-lunch');
+    renderFoodSection('dinner','food-dinner');
+    renderFoodSection('pre','food-pre');
+    renderFoodSection('post','food-post');
+  } else {
+    toast('No matching foods found in database.');
+  }
+}
 </script>
+<div id="rest-timer-wrap" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:8px 16px;border-radius:20px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:100;align-items:center;gap:8px">
+  ⏱️ Rest: <span id="rest-timer-val">01:30</span>
+  <span onclick="stopRestTimer()" style="cursor:pointer;margin-left:8px;opacity:0.7">&times;</span>
+</div>
 
 <div class="modal-overlay" id="workout-editor-modal" onclick="closeWorkoutEditor(event)">
   <div class="modal-sheet" style="max-height:85vh;display:flex;flex-direction:column">

@@ -488,7 +488,7 @@ textarea.inp{resize:none;min-height:72px}
 
   <div class="card" style="margin-bottom:16px;border:1px solid var(--accent)">
     <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;padding:12px">
-      <div style="font-size:24px;font-weight:bold;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--accent)" id="timer-display">00:00</div>
+      <div style="font-size:24px;font-weight:bold;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;color:var(--accent)" id="global-timer-display">00:00</div>
       <button class="btn btn-primary btn-sm" id="timer-btn" onclick="toggleTimer()">⏱️ Start Timer</button>
     </div>
   </div>
@@ -1732,9 +1732,6 @@ function goPanel(id,el){
   if(id==='diet') loadFood();
   if(id==='home') {
     loadHome();
-    renderHTMLChart('home-workout-chart', labels7, workoutData, 'var(--accent)', 'No Workouts');
-    renderHTMLChart('home-diet-chart', labels7, dietData, 'var(--accent3)', 'No Diet Logs');
-    renderHTMLChart('home-routine-chart', labels7, routineChartData, 'var(--accent2)', 'No Routine Logs');
   }
   if(id==='routine') loadRoutine();
   if(id.endsWith('-detail')){
@@ -1920,37 +1917,37 @@ function closeSettings(e) {
   }
 }
 
-let timerInt=null, timerStart=null;
+let globalTimerInt=null, globalTimerStart=null;
 function toggleTimer(){
   const btn = document.getElementById('timer-btn');
-  if(timerInt) {
-    clearInterval(timerInt);
-    timerInt=null;
+  if(globalTimerInt) {
+    clearInterval(globalTimerInt);
+    globalTimerInt=null;
     localStorage.removeItem('trackr_timer');
-    timerStart=null;
+    globalTimerStart=null;
     btn.innerHTML='⏱️ Start Timer';
   } else {
-    timerStart = Date.now();
-    localStorage.setItem('trackr_timer', timerStart);
-    timerInt = setInterval(updateTimer, 1000);
+    globalTimerStart = Date.now();
+    localStorage.setItem('trackr_timer', globalTimerStart);
+    globalTimerInt = setInterval(updateTimer, 1000);
     btn.innerHTML='⏹️ Stop Timer';
     updateTimer();
   }
 }
 function updateTimer(){
-  if(!timerStart) return;
-  const sec = Math.floor((Date.now() - timerStart)/1000);
+  if(!globalTimerStart) return;
+  const sec = Math.floor((Date.now() - globalTimerStart)/1000);
   const m=Math.floor(sec/60).toString().padStart(2,'0');
   const s=(sec%60).toString().padStart(2,'0');
-  const d = document.getElementById('timer-display');
+  const d = document.getElementById('global-timer-display');
   if(d) d.textContent=m+':'+s;
 }
 
 // Check on load
 const savedTimer = localStorage.getItem('trackr_timer');
 if(savedTimer) {
-  timerStart = parseInt(savedTimer);
-  timerInt = setInterval(updateTimer, 1000);
+  globalTimerStart = parseInt(savedTimer);
+  globalTimerInt = setInterval(updateTimer, 1000);
   setTimeout(() => {
     const btn = document.getElementById('timer-btn');
     if(btn) btn.innerHTML='⏹️ Stop Timer';

@@ -721,7 +721,7 @@ textarea.inp{resize:none;min-height:72px}
 /* ═══════════════════════════════════════════
    WORKOUT PLAN
 ═══════════════════════════════════════════ */
-const PLAN = {
+const DEFAULT_PLAN = {
   MON:{name:'Chest + Triceps',focus:'Upper/Mid/Lower Split',color:'#c8f060',
     A:[{n:'Incline Barbell Press',s:4,r:'10'}, {n:'Incline DB Press',s:3,r:'10'}, {n:'Incline Fly (DB)',s:3,r:'12'}, {n:'Tricep Pushdown (Straight Bar)',s:3,r:'12'}, {n:'Overhead Tricep Ext. (Cable)',s:3,r:'12'}],
     B:[{n:'Barbell Bench Press',s:4,r:'8'}, {n:'Seated Chest Fly Machine',s:3,r:'12'}, {n:'Bench Fly',s:3,r:'12'}, {n:'Tricep Rope Pushdown (Cable)',s:3,r:'12'}, {n:'Skull Crushers (EZ Bar)',s:3,r:'10'}],
@@ -800,6 +800,8 @@ const FOOD_ITEMS = {
   ],
 };
 let appSettings = JSON.parse(localStorage.getItem('trackr_settings') || '{"calTarget":2800, "weightTarget":160, "sleepTarget":8}');
+if(!appSettings.workoutPlan) appSettings.workoutPlan = JSON.parse(JSON.stringify(DEFAULT_PLAN));
+const PLAN = appSettings.workoutPlan;
 const CAL_TARGET = appSettings.calTarget, PRO_TARGET = 155;
 
 /* ═══════════════════════════════════════════
@@ -1955,7 +1957,85 @@ if(savedTimer) {
   }, 100);
 }
 
+/* ── Workout Editor ── */
+let currentEditDay = 'MON';
+let currentEditSet = 'A';
+function openWorkoutEditor() {
+  document.getElementById('settings-modal').classList.remove('open');
+  document.getElementById('workout-editor-modal').classList.add('open');
+  renderWorkoutEditor();
+}
+function closeWorkoutEditor(e) {
+  if(!e || e.target.id === 'workout-editor-modal' || e.target.innerHTML === '×' || e.target.innerHTML === '&times;') {
+    document.getElementById('workout-editor-modal').classList.remove('open');
+  }
+}
+function renderWorkoutEditor() {
+  const exOpts = Object.values(ALL_EXERCISES).flat().map(e=>'<option value="'+esc(e)+'">'+esc(e)+'</option>').join('');
+  let html = '<div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none">';
+  ['MON','TUE','WED','THU'].forEach(d => {
+    html += '<button class="btn '+(currentEditDay===d?'btn-primary':'')+'" style="flex-shrink:0" onclick="currentEditDay=\''+d+'\';renderWorkoutEditor()">'+d+'</button>';
+  });
+  html += '</div><div style="display:flex;gap:8px;margin-bottom:12px">';
+  ['A','B','C'].forEach(s => {
+    html += '<button class="btn '+(currentEditSet===s?'btn-primary':'')+'" onclick="currentEditSet=\''+s+'\';renderWorkoutEditor()">Plan '+s+'</button>';
+  });
+  html += '</div>';
+  
+  const exercises = PLAN[currentEditDay][currentEditSet] || [];
+  exercises.forEach((ex, i) => {
+    html += '<div style="background:var(--surface);padding:12px;border-radius:8px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px">';
+    html += '<div style="display:flex;justify-content:space-between;font-weight:600;font-size:12px"><span>Exercise '+(i+1)+'</span><button onclick="removeEx('+i+')" style="background:none;border:none;color:var(--accent3);cursor:pointer">✖ Remove</button></div>';
+    html += '<select id="we-ex-'+i+'" style="width:100%;padding:8px;border-radius:4px;background:var(--bg);color:var(--text);border:1px solid var(--border)">';
+    html += '<option value="'+esc(ex.n)+'" selected>'+esc(ex.n)+' (Current)</option>' + exOpts;
+    html += '</select>';
+    html += '<div style="display:flex;gap:8px"><input type="number" id="we-s-'+i+'" value="'+ex.s+'" placeholder="Sets" style="width:50%;padding:8px;border-radius:4px;background:var(--bg);color:var(--text);border:1px solid var(--border)"><input type="text" id="we-r-'+i+'" value="'+esc(ex.r)+'" placeholder="Reps" style="width:50%;padding:8px;border-radius:4px;background:var(--bg);color:var(--text);border:1px solid var(--border)"></div>';
+    html += '</div>';
+  });
+  html += '<button class="btn" style="width:100%;margin-bottom:12px;background:var(--surface)" onclick="addEx()">+ Add Exercise</button>';
+  document.getElementById('we-list').innerHTML = html;
+}
+function saveWorkoutEdits() {
+  const exercises = [];
+  const list = document.getElementById('we-list');
+  const selects = list.querySelectorAll('select');
+  selects.forEach((sel, i) => {
+    const s = parseInt(document.getElementById('we-s-'+i).value)||3;
+    const r = document.getElementById('we-r-'+i).value||'10';
+    exercises.push({n: sel.value, s, r});
+  });
+  PLAN[currentEditDay][currentEditSet] = exercises;
+  appSettings.workoutPlan = PLAN;
+  localStorage.setItem('trackr_settings', JSON.stringify(appSettings));
+  toast('Workout saved!');
+  // Reload home layout to apply
+  if(typeof loadToday === "function") loadToday();
+}
+function addEx() {
+  saveWorkoutEdits(); // save current state before re-render
+  PLAN[currentEditDay][currentEditSet].push({n:'Barbell Bench Press', s:3, r:'10'});
+  renderWorkoutEditor();
+}
+function removeEx(idx) {
+  saveWorkoutEdits(); // save current state before re-render
+  PLAN[currentEditDay][currentEditSet].splice(idx, 1);
+  renderWorkoutEditor();
+}
 </script>
+
+<div class="modal-overlay" id="workout-editor-modal" onclick="closeWorkoutEditor(event)">
+  <div class="modal-sheet" style="max-height:85vh;display:flex;flex-direction:column">
+    <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <div style="font-size:16px;font-family:'Bebas Neue',sans-serif;letter-spacing:1px">EDIT WORKOUT PLAN</div>
+      <div onclick="closeWorkoutEditor(event)" style="font-size:20px;color:var(--muted);cursor:pointer">&times;</div>
+    </div>
+    <div id="we-list" style="padding:16px;overflow-y:auto;flex-grow:1"></div>
+    <div style="padding:16px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px">
+      <button class="btn btn-primary" style="width:100%" onclick="saveWorkoutEdits();closeWorkoutEditor(event);toast('Plan Updated!');location.reload()">Done</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="settings-modal" onclick="closeSettings(event)">
   <div class="modal-sheet" style="max-height:80vh">
     <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
@@ -1976,6 +2056,7 @@ if(savedTimer) {
         <label style="display:block;font-size:12px;margin-bottom:4px">Sleep Target (hrs)</label>
         <input type="number" class="inp" id="set-sleep-target" step="0.5">
       </div>
+      <button class="btn" style="width:100%;margin-top:10px;background:var(--surface)" onclick="openWorkoutEditor()">Edit Workout Plan</button>
       <button class="btn btn-primary" style="width:100%;margin-top:10px" onclick="saveSettings()">Save Settings</button>
     </div>
   </div>
